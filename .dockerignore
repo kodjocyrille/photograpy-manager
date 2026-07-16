@@ -1,0 +1,23 @@
+# Dossier de build Maven (évite de recopier des artefacts locaux)
+target/
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Fichiers IDE
+.idea/
+*.iml
+.vscode/
+
+# Node / Tailwind (déjà compilé dans les resources statiques)
+node_modules/
+package-lock.json
+
+# Logs
+*.log
+
+# Docs
+README.md
+HELP.md
