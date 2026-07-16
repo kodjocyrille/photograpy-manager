@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom base styles for PHOTOAGENCE */
+@layer base {
+    body {
+        @apply font-sans antialiased;
+    }
+}
+
+@layer components {
+    .btn-primary {
+        @apply px-4 py-2.5 bg-gradient-to-r from-brand-600 to-brand-700 text-white font-semibold rounded-xl
+               hover:from-brand-700 hover:to-brand-800 focus:ring-4 focus:ring-brand-500/20 transition-all
+               shadow-lg shadow-brand-500/25 active:scale-[0.98] text-sm;
+    }
+    .btn-secondary {
+        @apply px-4 py-2.5 bg-white text-slate-700 font-medium rounded-xl border border-slate-300
+               hover:bg-slate-50 focus:ring-4 focus:ring-slate-500/10 transition-all text-sm;
+    }
+    .btn-danger {
+        @apply px-4 py-2.5 bg-red-600 text-white font-semibold rounded-xl
+               hover:bg-red-700 focus:ring-4 focus:ring-red-500/20 transition-all text-sm;
+    }
+    .card {
+        @apply bg-white rounded-xl border border-slate-200/60 shadow-sm;
+    }
+    .input-field {
+        @apply w-full px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-sm
+               focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all;
+    }
+}

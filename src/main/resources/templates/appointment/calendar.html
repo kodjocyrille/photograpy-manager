@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}" lang="fr">
+<head>
+    <title>Agenda</title>
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet">
+</head>
+<body>
+<section layout:fragment="content">
+    <div x-data="calendarApp()">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <h1 class="text-2xl font-bold text-slate-800">Agenda</h1>
+            <a href="/appointments/new" class="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-brand-600 to-brand-700 text-white font-semibold rounded-xl hover:from-brand-700 hover:to-brand-800 transition-all shadow-lg shadow-brand-500/25 text-sm">
+                <i data-lucide="calendar-plus" class="w-4 h-4"></i> Nouveau RDV
+            </a>
+        </div>
+
+        <!-- Legend -->
+        <div class="bg-white rounded-xl border border-slate-200/60 shadow-sm p-4 mb-4 flex flex-wrap gap-4 text-xs">
+            <span class="font-semibold text-slate-600 uppercase tracking-wide mr-2">RDV :</span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-emerald-500"></span> Confirmé</span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-amber-500"></span> En attente</span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-purple-500"></span> Reporté</span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-red-500"></span> Annulé</span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-slate-400"></span> Terminé</span>
+            <span class="border-l border-slate-300 pl-4 ml-2 font-semibold text-slate-600 uppercase tracking-wide mr-2">Prestations :</span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-blue-500"></span> En attente</span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-sky-500"></span> En cours</span>
+        </div>
+
+        <!-- Calendar + prestations -->
+        <div class="grid xl:grid-cols-[minmax(0,1fr)_360px] gap-4 items-start">
+            <div class="bg-white rounded-xl border border-slate-200/60 shadow-sm p-4">
+                <div id="calendar"></div>
+            </div>
+
+            <aside class="bg-white rounded-xl border border-slate-200/60 shadow-sm overflow-hidden">
+                <div class="px-5 py-4 border-b border-slate-100">
+                    <div class="flex items-center justify-between gap-3">
+                        <div>
+                            <h2 class="text-sm font-bold text-slate-800">Prestations</h2>
+                            <p class="text-xs text-slate-400" x-text="prestationPanelSubtitle()"></p>
+                        </div>
+                        <div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
+                            <i data-lucide="camera" class="w-5 h-5 text-blue-600"></i>
+                        </div>
+                    </div>
+                    <div class="mt-4 grid grid-cols-3 gap-1 rounded-xl bg-slate-100 p-1">
+                        <button type="button" @click="prestationFilter='day'"
+                                class="px-2 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                                :class="prestationFilter === 'day' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'">Jour</button>
+                        <button type="button" @click="prestationFilter='current'"
+                                class="px-2 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                                :class="prestationFilter === 'current' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'">En cours</button>
+                        <button type="button" @click="prestationFilter='upcoming'"
+                                class="px-2 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                                :class="prestationFilter === 'upcoming' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'">A venir</button>
+                    </div>
+                </div>
+                <div class="max-h-[620px] overflow-y-auto divide-y divide-slate-100">
+                    <template x-for="item in visiblePrestations()" :key="item.id">
+                        <button type="button" @click="openPrestationFromItem(item)"
+                                class="w-full text-left px-5 py-4 hover:bg-slate-50 transition-colors">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="min-w-0">
+                                    <p class="text-sm font-semibold text-slate-800 truncate" x-text="item.clientName"></p>
+                                    <p class="text-xs text-slate-500 mt-0.5 truncate" x-text="item.type + ' - ' + item.description"></p>
+                                </div>
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[11px] font-medium flex-shrink-0"
+                                      :class="prestationStatusClass(item.status)" x-text="item.statusLabel"></span>
+                            </div>
+                            <div class="mt-3 flex items-center justify-between gap-3 text-xs text-slate-500">
+                                <span class="inline-flex items-center gap-1.5">
+                                    <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+                                    <span x-text="formatDateShort(item.scheduledDate) + ' ' + formatTime(item.scheduledDate)"></span>
+                                </span>
+                                <span class="font-semibold text-slate-700" x-show="item.agreedPrice" x-text="item.agreedPrice + ' FCFA'"></span>
+                            </div>
+                        </button>
+                    </template>
+                    <div x-show="visiblePrestations().length === 0" x-cloak class="px-5 py-10 text-center text-slate-400">
+                        <i data-lucide="calendar-x" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>
+                        <p class="text-sm">Aucune prestation</p>
+                    </div>
+                </div>
+            </aside>
+        </div>
+
+        <!-- ═══════ MODAL DÉTAIL RDV ═══════ -->
+        <div x-show="showModal && modalType === 'appointment'" x-cloak
+             class="fixed inset-0 z-50 flex items-center justify-center p-4"
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0">
+            <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="showModal=false"></div>
+            <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto z-10"
+                 x-transition:enter="transition ease-out duration-200"
+                 x-transition:enter-start="opacity-0 scale-95 translate-y-4"
+                 x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                 @click.away="showModal=false">
+                <div x-show="loading" class="p-12 flex flex-col items-center gap-3">
+                    <svg class="animate-spin h-8 w-8 text-brand-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                    <p class="text-sm text-slate-400">Chargement...</p>
+                </div>
+                <div x-show="!loading && rdv" x-cloak>
+                    <div class="relative px-6 pt-6 pb-4">
+                        <button @click="showModal=false" class="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
+                            <i data-lucide="x" class="w-5 h-5"></i>
+                        </button>
+                        <div class="flex items-start gap-3 mb-3">
+                            <div class="p-2.5 rounded-xl" :class="statusBgClass()">
+                                <i data-lucide="calendar-check" class="w-5 h-5" :class="statusTextClass()"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <h2 class="text-lg font-bold text-slate-800" x-text="rdv.type"></h2>
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mt-1"
+                                      :class="statusBadgeClass()" x-text="rdv.statusLabel"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="border-t border-slate-100"></div>
+                    <div class="px-6 py-4 space-y-4">
+                        <div class="flex items-start gap-3 p-3 bg-slate-50 rounded-xl">
+                            <div class="w-10 h-10 rounded-full bg-brand-100 flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="user" class="w-4 h-4 text-brand-600"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-xs text-slate-400 uppercase tracking-wide font-medium">Client</p>
+                                <p class="font-semibold text-slate-800" x-text="rdv.clientName"></p>
+                                <p class="text-xs text-slate-500 mt-0.5" x-show="rdv.clientEmail" x-text="rdv.clientEmail"></p>
+                                <p class="text-xs text-slate-500" x-show="rdv.clientPhone" x-text="rdv.clientPhone"></p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="p-3 bg-slate-50 rounded-xl">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <i data-lucide="clock" class="w-3.5 h-3.5 text-slate-400"></i>
+                                    <p class="text-xs text-slate-400 uppercase tracking-wide font-medium">Date & heure</p>
+                                </div>
+                                <p class="text-sm font-semibold text-slate-800" x-text="formatDate(rdv.startTime)"></p>
+                                <p class="text-xs text-slate-500" x-text="formatTime(rdv.startTime) + ' → ' + formatTime(rdv.endTime)"></p>
+                            </div>
+                            <div class="p-3 bg-slate-50 rounded-xl">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <i data-lucide="map-pin" class="w-3.5 h-3.5 text-slate-400"></i>
+                                    <p class="text-xs text-slate-400 uppercase tracking-wide font-medium">Lieu</p>
+                                </div>
+                                <p class="text-sm font-semibold text-slate-800" x-text="rdv.location || 'Non précisé'"></p>
+                            </div>
+                        </div>
+                        <div class="p-3 bg-slate-50 rounded-xl">
+                            <div class="flex items-center gap-2 mb-1">
+                                <i data-lucide="camera" class="w-3.5 h-3.5 text-slate-400"></i>
+                                <p class="text-xs text-slate-400 uppercase tracking-wide font-medium">Photographe assigné</p>
+                            </div>
+                            <p class="text-sm font-semibold text-slate-800" x-text="rdv.photographer || 'Non assigné'"></p>
+                        </div>
+                        <div x-show="rdv.notes" class="p-3 bg-amber-50/60 border border-amber-100 rounded-xl">
+                            <div class="flex items-center gap-2 mb-1">
+                                <i data-lucide="sticky-note" class="w-3.5 h-3.5 text-amber-500"></i>
+                                <p class="text-xs text-amber-600 uppercase tracking-wide font-medium">Notes</p>
+                            </div>
+                            <p class="text-sm text-slate-700 whitespace-pre-line" x-text="rdv.notes"></p>
+                        </div>
+                    </div>
+                    <div class="border-t border-slate-100 px-6 py-4 flex gap-2">
+                        <a :href="'/appointments/' + rdv.id + '/edit'"
+                           class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-brand-600 text-white font-semibold rounded-xl hover:bg-brand-700 transition-all text-sm shadow-lg shadow-brand-500/20">
+                            <i data-lucide="pencil" class="w-4 h-4"></i> Modifier
+                        </a>
+                        <a :href="'/clients/' + rdv.clientId"
+                           class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-white text-slate-700 font-medium rounded-xl border border-slate-300 hover:bg-slate-50 transition-all text-sm">
+                            <i data-lucide="user" class="w-4 h-4"></i> Fiche client
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════ MODAL DÉTAIL PRESTATION ═══════ -->
+        <div x-show="showModal && modalType === 'prestation'" x-cloak
+             class="fixed inset-0 z-50 flex items-center justify-center p-4"
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0">
+            <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="showModal=false"></div>
+            <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto z-10"
+                 x-transition:enter="transition ease-out duration-200"
+                 x-transition:enter-start="opacity-0 scale-95 translate-y-4"
+                 x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                 @click.away="showModal=false">
+                <div x-show="!loading && prestation" x-cloak>
+                    <div class="relative px-6 pt-6 pb-4">
+                        <button @click="showModal=false" class="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
+                            <i data-lucide="x" class="w-5 h-5"></i>
+                        </button>
+                        <div class="flex items-start gap-3 mb-3">
+                            <div class="p-2.5 rounded-xl bg-blue-100">
+                                <i data-lucide="camera" class="w-5 h-5 text-blue-600"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <h2 class="text-lg font-bold text-slate-800">📸 Prestation</h2>
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mt-1"
+                                      :class="prestationBadgeClass()" x-text="prestation.statusLabel"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="border-t border-slate-100"></div>
+                    <div class="px-6 py-4 space-y-4">
+                        <div class="flex items-start gap-3 p-3 bg-slate-50 rounded-xl">
+                            <div class="w-10 h-10 rounded-full bg-brand-100 flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="user" class="w-4 h-4 text-brand-600"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-xs text-slate-400 uppercase tracking-wide font-medium">Client</p>
+                                <p class="font-semibold text-slate-800" x-text="prestation.clientName"></p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="p-3 bg-blue-50 rounded-xl">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <i data-lucide="package" class="w-3.5 h-3.5 text-blue-500"></i>
+                                    <p class="text-xs text-blue-500 uppercase tracking-wide font-medium">Prestation</p>
+                                </div>
+                                <p class="text-sm font-semibold text-slate-800" x-text="prestation.type"></p>
+                                <p class="text-xs text-slate-500 mt-0.5" x-text="prestation.description"></p>
+                            </div>
+                            <div class="p-3 bg-emerald-50 rounded-xl">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <i data-lucide="banknote" class="w-3.5 h-3.5 text-emerald-500"></i>
+                                    <p class="text-xs text-emerald-500 uppercase tracking-wide font-medium">Prix convenu</p>
+                                </div>
+                                <p class="text-sm font-bold text-slate-800" x-text="prestation.agreedPrice + ' FCFA'"></p>
+                            </div>
+                        </div>
+                        <div class="p-3 bg-slate-50 rounded-xl">
+                            <div class="flex items-center gap-2 mb-1">
+                                <i data-lucide="clock" class="w-3.5 h-3.5 text-slate-400"></i>
+                                <p class="text-xs text-slate-400 uppercase tracking-wide font-medium">Date & heure</p>
+                            </div>
+                            <p class="text-sm font-semibold text-slate-800" x-text="formatDate(prestation.scheduledDate)"></p>
+                            <p class="text-xs text-slate-500" x-text="formatTime(prestation.scheduledDate) + (prestation.scheduledEndDate ? ' → ' + formatTime(prestation.scheduledEndDate) : '')"></p>
+                        </div>
+                        <div x-show="prestation.notes" class="p-3 bg-amber-50/60 border border-amber-100 rounded-xl">
+                            <div class="flex items-center gap-2 mb-1">
+                                <i data-lucide="sticky-note" class="w-3.5 h-3.5 text-amber-500"></i>
+                                <p class="text-xs text-amber-600 uppercase tracking-wide font-medium">Notes</p>
+                            </div>
+                            <p class="text-sm text-slate-700 whitespace-pre-line" x-text="prestation.notes"></p>
+                        </div>
+                    </div>
+                    <div class="border-t border-slate-100 px-6 py-4 flex gap-2">
+                        <a :href="'/clients/' + prestation.clientId"
+                           class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-brand-600 text-white font-semibold rounded-xl hover:bg-brand-700 transition-all text-sm shadow-lg shadow-brand-500/20">
+                            <i data-lucide="user" class="w-4 h-4"></i> Fiche client
+                        </a>
+                        <a href="/admin/catalog?tab=assignments"
+                           class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-white text-slate-700 font-medium rounded-xl border border-slate-300 hover:bg-slate-50 transition-all text-sm">
+                            <i data-lucide="settings" class="w-4 h-4"></i> Gérer
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script layout:fragment="scripts" th:inline="javascript">
+    function calendarApp() {
+        return {
+            showModal: false,
+            modalType: 'appointment', // 'appointment' or 'prestation'
+            loading: false,
+            rdv: null,
+            prestation: null,
+            prestations: [],
+            selectedDate: new Date().toISOString().slice(0, 10),
+            prestationFilter: 'day',
+
+            init() {
+                this.$nextTick(() => {
+                    this.initCalendar();
+                });
+            },
+
+            initCalendar() {
+                var calendarEl = document.getElementById('calendar');
+                if (!calendarEl || calendarEl.dataset.initialized) return;
+                calendarEl.dataset.initialized = 'true';
+
+                var self = this;
+                var calendar = new FullCalendar.Calendar(calendarEl, {
+                    initialView: window.innerWidth < 768 ? 'listWeek' : 'dayGridMonth',
+                    locale: 'fr',
+                    headerToolbar: {
+                        left: 'prev,next today',
+                        center: 'title',
+                        right: 'dayGridMonth,timeGridWeek,listWeek'
+                    },
+                    buttonText: { today: "Aujourd'hui", month: 'Mois', week: 'Semaine', list: 'Liste' },
+                    events: function(fetchInfo, successCallback, failureCallback) {
+                        fetch('/appointments/events?start=' + encodeURIComponent(fetchInfo.startStr) + '&end=' + encodeURIComponent(fetchInfo.endStr))
+                            .then(function(response) { return response.json(); })
+                            .then(function(events) {
+                                self.prestations = events
+                                    .filter(function(event) { return event.extendedProps && event.extendedProps.eventType === 'prestation'; })
+                                    .map(function(event) { return self.prestationFromEventData(event); })
+                                    .sort(function(a, b) { return new Date(a.scheduledDate) - new Date(b.scheduledDate); });
+                                self.$nextTick(function() { lucide.createIcons(); });
+                                successCallback(events);
+                            })
+                            .catch(failureCallback);
+                    },
+                    dateClick: function(info) {
+                        self.selectedDate = info.dateStr.slice(0, 10);
+                        self.prestationFilter = 'day';
+                    },
+                    eventContent: function(arg) {
+                        if (arg.event.extendedProps.eventType === 'prestation' && arg.view.type === 'dayGridMonth') {
+                            return { html: '<span class="mx-auto mt-0.5 block h-2.5 w-2.5 rounded-full bg-blue-500 ring-2 ring-blue-100" title="Prestation"></span>' };
+                        }
+                        return undefined;
+                    },
+                    eventClick: function(info) {
+                        info.jsEvent.preventDefault();
+                        var eventId = info.event.id.toString();
+                        if (eventId.startsWith('prestation-')) {
+                            self.openPrestationDetail(info.event);
+                        } else {
+                            self.openDetail(eventId);
+                        }
+                    },
+                    height: 'auto',
+                    dayMaxEvents: 3,
+                    eventDidMount: function(info) {
+                        if (info.event.extendedProps.eventType === 'prestation') {
+                            info.el.setAttribute('title', info.event.title);
+                        }
+                    }
+                });
+                calendar.render();
+            },
+
+            async openDetail(id) {
+                this.modalType = 'appointment';
+                this.showModal = true;
+                this.loading = true;
+                this.rdv = null;
+
+                try {
+                    const response = await fetch('/appointments/' + id, {
+                        headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+                    });
+                    this.rdv = await response.json();
+                } catch (err) {
+                    console.error('Erreur chargement RDV:', err);
+                    this.showModal = false;
+                } finally {
+                    this.loading = false;
+                    this.$nextTick(() => lucide.createIcons());
+                }
+            },
+
+            openPrestationDetail(event) {
+                this.modalType = 'prestation';
+                this.showModal = true;
+                this.loading = false;
+
+                var ep = event.extendedProps;
+                var statusLabels = { EN_ATTENTE: 'En attente', EN_COURS: 'En cours', TERMINEE: 'Terminée', ANNULEE: 'Annulée' };
+
+                this.prestation = {
+                    id: ep.prestationId,
+                    clientName: event.title.replace('📸 ', '').split(' — ')[0],
+                    clientId: ep.clientId,
+                    type: event.title.replace('📸 ', '').split(' — ')[1] || '',
+                    description: ep.description || '',
+                    status: ep.status,
+                    statusLabel: statusLabels[ep.status] || ep.status,
+                    scheduledDate: event.startStr,
+                    scheduledEndDate: event.endStr,
+                    agreedPrice: ep.agreedPrice || '',
+                    notes: ep.notes || ''
+                };
+                this.prestation.clientName = ep.clientName || this.prestation.clientName;
+                this.prestation.type = ep.type || this.prestation.type;
+                this.prestation.statusLabel = ep.statusLabel || this.prestation.statusLabel;
+                this.prestation.scheduledDate = ep.scheduledDate || this.prestation.scheduledDate;
+                this.prestation.scheduledEndDate = ep.scheduledEndDate || '';
+
+                this.$nextTick(() => lucide.createIcons());
+            },
+
+            openPrestationFromItem(item) {
+                this.modalType = 'prestation';
+                this.showModal = true;
+                this.loading = false;
+                this.prestation = item;
+                this.$nextTick(() => lucide.createIcons());
+            },
+
+            prestationFromEventData(event) {
+                var ep = event.extendedProps || {};
+                return {
+                    id: ep.prestationId,
+                    clientName: ep.clientName || event.title.split(' - ')[0],
+                    clientId: ep.clientId,
+                    type: ep.type || event.title.split(' - ')[1] || '',
+                    description: ep.description || '',
+                    status: ep.status,
+                    statusLabel: ep.statusLabel || ep.status,
+                    scheduledDate: ep.scheduledDate || event.start,
+                    scheduledEndDate: ep.scheduledEndDate || '',
+                    agreedPrice: ep.agreedPrice || '',
+                    notes: ep.notes || ''
+                };
+            },
+
+            visiblePrestations() {
+                var today = new Date().toISOString().slice(0, 10);
+                return this.prestations.filter((item) => {
+                    var day = (item.scheduledDate || '').slice(0, 10);
+                    if (this.prestationFilter === 'day') return day === this.selectedDate;
+                    if (this.prestationFilter === 'current') return item.status === 'EN_COURS';
+                    return day >= today && item.status !== 'TERMINEE' && item.status !== 'ANNULEE';
+                });
+            },
+
+            prestationPanelSubtitle() {
+                if (this.prestationFilter === 'day') return this.formatDateShort(this.selectedDate);
+                if (this.prestationFilter === 'current') return 'Prestations en cours';
+                return 'Prestations a venir';
+            },
+
+            formatDate(isoStr) {
+                if (!isoStr) return '';
+                const d = new Date(isoStr);
+                return d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+            },
+
+            formatDateShort(isoStr) {
+                if (!isoStr) return '';
+                const d = new Date(isoStr);
+                return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+            },
+
+            formatTime(isoStr) {
+                if (!isoStr) return '';
+                const d = new Date(isoStr);
+                return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+            },
+
+            statusBgClass() {
+                if (!this.rdv) return 'bg-slate-100';
+                const s = this.rdv.status;
+                return s === 'CONFIRMED' ? 'bg-emerald-100' :
+                       s === 'PENDING' ? 'bg-amber-100' :
+                       s === 'CANCELLED' ? 'bg-red-100' :
+                       s === 'POSTPONED' ? 'bg-purple-100' : 'bg-slate-100';
+            },
+            statusTextClass() {
+                if (!this.rdv) return 'text-slate-500';
+                const s = this.rdv.status;
+                return s === 'CONFIRMED' ? 'text-emerald-600' :
+                       s === 'PENDING' ? 'text-amber-600' :
+                       s === 'CANCELLED' ? 'text-red-600' :
+                       s === 'POSTPONED' ? 'text-purple-600' : 'text-slate-500';
+            },
+            statusBadgeClass() {
+                if (!this.rdv) return 'bg-slate-100 text-slate-600';
+                const s = this.rdv.status;
+                return s === 'CONFIRMED' ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200' :
+                       s === 'PENDING' ? 'bg-amber-50 text-amber-700 ring-1 ring-amber-200' :
+                       s === 'CANCELLED' ? 'bg-red-50 text-red-700 ring-1 ring-red-200' :
+                       s === 'POSTPONED' ? 'bg-purple-50 text-purple-700 ring-1 ring-purple-200' :
+                       'bg-slate-100 text-slate-600 ring-1 ring-slate-200';
+            },
+            prestationBadgeClass() {
+                if (!this.prestation) return 'bg-slate-100 text-slate-600';
+                const s = this.prestation.status;
+                return s === 'EN_ATTENTE' ? 'bg-amber-50 text-amber-700 ring-1 ring-amber-200' :
+                       s === 'EN_COURS' ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-200' :
+                       s === 'TERMINEE' ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200' :
+                       'bg-red-50 text-red-700 ring-1 ring-red-200';
+            },
+            prestationStatusClass(status) {
+                return status === 'EN_ATTENTE' ? 'bg-amber-50 text-amber-700' :
+                       status === 'EN_COURS' ? 'bg-blue-50 text-blue-700' :
+                       status === 'TERMINEE' ? 'bg-emerald-50 text-emerald-700' :
+                       'bg-red-50 text-red-700';
+            }
+        }
+    }
+
+    document.addEventListener('turbo:load', function() {
+        lucide.createIcons();
+    });
+</script>
+</body>
+</html>

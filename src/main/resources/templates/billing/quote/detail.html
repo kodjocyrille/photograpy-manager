@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}" lang="fr">
+<head><title th:text="${pageTitle}">Devis</title></head>
+<body>
+<section layout:fragment="content">
+    <div class="max-w-3xl mx-auto">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <div class="flex items-center gap-3">
+                <a href="/billing/quotes" class="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-white transition-colors"><i data-lucide="arrow-left" class="w-5 h-5"></i></a>
+                <div>
+                    <h1 class="text-2xl font-bold text-slate-800" th:text="${quote.quoteNumber}">DEV</h1>
+                    <a th:href="@{/clients/{id}(id=${quote.client.id})}" class="text-sm text-slate-400 hover:text-brand-600" th:text="${quote.client.fullName}">Client</a>
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <a th:href="@{/billing/quotes/{id}/edit(id=${quote.id})}" class="inline-flex items-center gap-2 px-4 py-2 bg-white text-slate-700 font-medium rounded-xl border border-slate-300 hover:bg-slate-50 text-sm"><i data-lucide="pencil" class="w-4 h-4"></i> Modifier</a>
+                <form th:if="${quote.status.name() == 'ACCEPTED'}" th:action="@{/billing/invoices/from-quote/{id}(id=${quote.id})}" method="post">
+                    <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white font-medium rounded-xl hover:bg-emerald-700 text-sm"><i data-lucide="receipt" class="w-4 h-4"></i> Transformer en facture</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-6">
+            <!-- Lines -->
+            <div class="md:col-span-2 bg-white rounded-xl border border-slate-200/60 shadow-sm">
+                <div class="px-5 py-4 border-b border-slate-100">
+                    <h3 class="font-semibold text-slate-800">Lignes du devis</h3>
+                </div>
+                <table class="w-full text-sm">
+                    <thead class="bg-slate-50 border-b border-slate-200">
+                        <tr>
+                            <th class="text-left px-4 py-2 text-slate-600">Description</th>
+                            <th class="text-center px-4 py-2 text-slate-600">Qté</th>
+                            <th class="text-right px-4 py-2 text-slate-600">Prix unit.</th>
+                            <th class="text-right px-4 py-2 text-slate-600">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        <tr th:each="line : ${quote.lines}">
+                            <td class="px-4 py-3" th:text="${line.description}">Desc</td>
+                            <td class="px-4 py-3 text-center" th:text="${line.quantity}">1</td>
+                            <td class="px-4 py-3 text-right" th:text="${#numbers.formatDecimal(line.unitPrice, 0, 'COMMA', 0, 'POINT')} + ' FCFA'">0</td>
+                            <td class="px-4 py-3 text-right font-medium" th:text="${#numbers.formatDecimal(line.lineTotal, 0, 'COMMA', 0, 'POINT')} + ' FCFA'">0</td>
+                        </tr>
+                    </tbody>
+                    <tfoot class="bg-slate-50">
+                        <tr>
+                            <td colspan="3" class="px-4 py-3 text-right font-semibold text-slate-700">TOTAL</td>
+                            <td class="px-4 py-3 text-right text-lg font-bold text-slate-800" th:text="${#numbers.formatDecimal(quote.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' FCFA'">0 FCFA</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <!-- Status -->
+            <div class="bg-white rounded-xl border border-slate-200/60 shadow-sm p-5">
+                <h3 class="font-semibold text-slate-800 mb-4">Informations</h3>
+                <dl class="space-y-3 text-sm mb-4">
+                    <div><dt class="text-slate-400 text-xs">Statut</dt>
+                        <dd><span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium"
+                              th:text="${quote.status.label}"
+                              th:classappend="${quote.status.name() == 'DRAFT' ? 'bg-slate-100 text-slate-600' : (quote.status.name() == 'SENT' ? 'bg-blue-50 text-blue-700' : (quote.status.name() == 'ACCEPTED' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'))}">S</span></dd>
+                    </div>
+                    <div><dt class="text-slate-400 text-xs">Valide jusqu'au</dt><dd th:text="${quote.validUntil != null ? #temporals.format(quote.validUntil, 'dd/MM/yyyy') : '-'}">Date</dd></div>
+                    <div><dt class="text-slate-400 text-xs">Créé le</dt><dd th:text="${#temporals.format(quote.createdAt, 'dd/MM/yyyy HH:mm')}">Date</dd></div>
+                </dl>
+                <p class="text-xs text-slate-400 mb-2">Changer le statut :</p>
+                <div class="space-y-2">
+                    <form th:each="s : ${statuses}" th:if="${s != quote.status}"
+                          th:action="@{/billing/quotes/{id}/status(id=${quote.id})}" method="post">
+                        <input type="hidden" name="status" th:value="${s.name()}">
+                        <button type="submit" class="w-full text-left px-3 py-2 rounded-lg text-sm hover:bg-slate-50 transition-colors" th:text="${s.label}">Status</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+</body>
+</html>

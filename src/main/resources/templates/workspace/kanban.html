@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}" lang="fr">
+<head><title>Workspace</title></head>
+<body>
+<section layout:fragment="content">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <h1 class="text-2xl font-bold text-slate-800">Workspace</h1>
+        <a href="/workspace/new" class="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-brand-600 to-brand-700 text-white font-semibold rounded-xl hover:from-brand-700 hover:to-brand-800 transition-all shadow-lg shadow-brand-500/25 text-sm">
+            <i data-lucide="folder-plus" class="w-4 h-4"></i> Nouveau dossier
+        </a>
+    </div>
+
+    <!-- Kanban Board -->
+    <div class="grid md:grid-cols-2 gap-6">
+        <!-- Column: À traiter -->
+        <div class="bg-slate-100/50 rounded-xl p-4">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-semibold text-slate-700 flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full bg-amber-400"></span>
+                    À traiter
+                    <span class="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full" th:text="${#lists.size(toProcess)}">0</span>
+                </h3>
+            </div>
+            <div class="space-y-3">
+                <th:block th:each="d : ${toProcess}">
+                    <a th:href="@{/workspace/{id}(id=${d.id})}"
+                       class="block bg-white rounded-xl border border-slate-200/60 shadow-sm p-4 hover:shadow-md transition-all hover:-translate-y-0.5 cursor-pointer">
+                        <div class="flex items-start justify-between mb-2">
+                            <span class="text-xs font-mono text-slate-400" th:text="${d.dossierCode}">DOS</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold"
+                                  th:text="${d.priority.label}"
+                                  th:classappend="${d.priority.name() == 'VIP' ? 'bg-purple-100 text-purple-700' : (d.priority.name() == 'URGENT' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-500')}">P</span>
+                        </div>
+                        <p class="font-medium text-slate-800 text-sm mb-1" th:text="${d.client.fullName}">Client</p>
+                        <p class="text-xs text-slate-400 mb-2" th:text="${d.serviceType.label}">Type</p>
+                        <div class="flex items-center justify-between">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-medium"
+                                  th:text="${d.status.label}"
+                                  th:classappend="${d.status.name() == 'COMPLETED' ? 'bg-emerald-50 text-emerald-700' : (d.status.name() == 'RETOUCHING' ? 'bg-blue-50 text-blue-700' : (d.status.name() == 'AWAITING_VALIDATION' ? 'bg-amber-50 text-amber-700' : (d.status.name() == 'CORRECTIONS_REQUESTED' ? 'bg-red-50 text-red-700' : 'bg-slate-100 text-slate-600')))}">S</span>
+                            <span class="text-[10px] text-slate-400" th:if="${d.sessionDate != null}" th:text="${#temporals.format(d.sessionDate, 'dd/MM')}">Date</span>
+                        </div>
+                    </a>
+                </th:block>
+                <div th:if="${#lists.isEmpty(toProcess)}" class="text-center py-8 text-slate-400 text-sm">Aucun dossier à traiter</div>
+            </div>
+        </div>
+
+        <!-- Column: Terminé -->
+        <div class="bg-slate-100/50 rounded-xl p-4">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-semibold text-slate-700 flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full bg-emerald-400"></span>
+                    Terminé
+                    <span class="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full" th:text="${#lists.size(done)}">0</span>
+                </h3>
+            </div>
+            <div class="space-y-3">
+                <th:block th:each="d : ${done}">
+                    <a th:href="@{/workspace/{id}(id=${d.id})}"
+                       class="block bg-white rounded-xl border border-slate-200/60 shadow-sm p-4 hover:shadow-md transition-all hover:-translate-y-0.5 cursor-pointer">
+                        <div class="flex items-start justify-between mb-2">
+                            <span class="text-xs font-mono text-slate-400" th:text="${d.dossierCode}">DOS</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold"
+                                  th:text="${d.priority.label}"
+                                  th:classappend="${d.priority.name() == 'VIP' ? 'bg-purple-100 text-purple-700' : (d.priority.name() == 'URGENT' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-500')}">P</span>
+                        </div>
+                        <p class="font-medium text-slate-800 text-sm mb-1" th:text="${d.client.fullName}">Client</p>
+                        <p class="text-xs text-slate-400 mb-2" th:text="${d.serviceType.label}">Type</p>
+                        <div class="flex items-center justify-between">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-medium"
+                                  th:text="${d.status.label}"
+                                  th:classappend="${d.status.name() == 'COMPLETED' ? 'bg-emerald-50 text-emerald-700' : (d.status.name() == 'RETOUCHING' ? 'bg-blue-50 text-blue-700' : (d.status.name() == 'AWAITING_VALIDATION' ? 'bg-amber-50 text-amber-700' : (d.status.name() == 'CORRECTIONS_REQUESTED' ? 'bg-red-50 text-red-700' : 'bg-slate-100 text-slate-600')))}">S</span>
+                            <span class="text-[10px] text-slate-400" th:if="${d.sessionDate != null}" th:text="${#temporals.format(d.sessionDate, 'dd/MM')}">Date</span>
+                        </div>
+                    </a>
+                </th:block>
+                <div th:if="${#lists.isEmpty(done)}" class="text-center py-8 text-slate-400 text-sm">Aucun dossier terminé</div>
+            </div>
+        </div>
+    </div>
+</section>
+</body>
+</html>

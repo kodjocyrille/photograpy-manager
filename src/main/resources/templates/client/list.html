@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}" lang="fr">
+<head><title>Clients</title></head>
+<body>
+<section layout:fragment="content">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-800">Clients</h1>
+            <p class="text-sm text-slate-500" th:text="${#lists.size(clients)} + ' client(s)'">0 clients</p>
+        </div>
+        <div class="flex gap-2">
+            <a href="/clients/export-csv" data-turbo="false" class="inline-flex items-center gap-2 px-4 py-2.5 bg-white text-slate-700 font-medium rounded-xl border border-slate-300 hover:bg-slate-50 transition-all text-sm">
+                <i data-lucide="download" class="w-4 h-4"></i> Export CSV
+            </a>
+            <a href="/clients/new" class="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-brand-600 to-brand-700 text-white font-semibold rounded-xl hover:from-brand-700 hover:to-brand-800 transition-all shadow-lg shadow-brand-500/25 text-sm">
+                <i data-lucide="user-plus" class="w-4 h-4"></i> Nouveau client
+            </a>
+        </div>
+    </div>
+
+    <!-- Search & filters -->
+    <div class="bg-white rounded-xl border border-slate-200/60 shadow-sm p-4 mb-6" x-data="{search: '[[${search ?: ''}]]'}">
+        <div class="flex flex-col sm:flex-row gap-3">
+            <div class="flex-1 relative">
+                <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+                <input type="text" x-model="search" placeholder="Rechercher par nom, email ou téléphone..."
+                       class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none"
+                       @input.debounce.300ms="Turbo.visit('/clients?search='+encodeURIComponent(search))">
+            </div>
+            <select onchange="Turbo.visit('/clients?type='+this.value)"
+                    class="px-4 py-2.5 rounded-xl border border-slate-300 text-sm bg-white focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none">
+                <option value="">Toutes les prestations</option>
+                <option th:each="t : ${eventTypes}" th:value="${t.name()}" th:text="${t.label}" th:selected="${t == selectedType}">Type</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Client table -->
+    <div class="bg-white rounded-xl border border-slate-200/60 shadow-sm overflow-hidden" th:fragment="clientTable">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-slate-50 border-b border-slate-200">
+                    <tr>
+                        <th class="text-left px-4 py-3 font-semibold text-slate-600">Client</th>
+                        <th class="text-left px-4 py-3 font-semibold text-slate-600 hidden md:table-cell">Téléphone</th>
+                        <th class="text-left px-4 py-3 font-semibold text-slate-600 hidden lg:table-cell">Prestation</th>
+                        <th class="text-left px-4 py-3 font-semibold text-slate-600 hidden lg:table-cell">Date événement</th>
+                        <th class="text-right px-4 py-3 font-semibold text-slate-600">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    <tr th:each="client : ${clients}" class="hover:bg-slate-50/50 transition-colors">
+                        <td class="px-4 py-3">
+                            <a th:href="@{/clients/{id}(id=${client.id})}" class="hover:text-brand-600">
+                                <p class="font-medium text-slate-800" th:text="${client.fullName}">Nom</p>
+                                <p class="text-xs text-slate-400" th:text="${client.email}">email</p>
+                            </a>
+                        </td>
+                        <td class="px-4 py-3 text-slate-600 hidden md:table-cell" th:text="${client.phone}">Tel</td>
+                        <td class="px-4 py-3 hidden lg:table-cell">
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-brand-50 text-brand-700" th:text="${client.serviceType.label}">Type</span>
+                        </td>
+                        <td class="px-4 py-3 text-slate-600 hidden lg:table-cell" th:text="${#temporals.format(client.eventDate, 'dd/MM/yyyy')}">Date</td>
+                        <td class="px-4 py-3 text-right">
+                            <a th:href="@{/clients/{id}(id=${client.id})}" class="inline-flex p-1.5 text-slate-400 hover:text-brand-600 rounded-lg hover:bg-brand-50 transition-colors">
+                                <i data-lucide="eye" class="w-4 h-4"></i>
+                            </a>
+                            <a th:href="@{/clients/{id}/edit(id=${client.id})}" class="inline-flex p-1.5 text-slate-400 hover:text-amber-600 rounded-lg hover:bg-amber-50 transition-colors">
+                                <i data-lucide="pencil" class="w-4 h-4"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(clients)}">
+                        <td colspan="5" class="px-4 py-12 text-center text-slate-400">
+                            <i data-lucide="users" class="w-10 h-10 mx-auto mb-3 opacity-40"></i>
+                            <p>Aucun client trouvé</p>
+                            <a href="/clients/new" class="text-brand-600 text-sm hover:underline mt-1 inline-block">Créer un nouveau client</a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+</body>
+</html>

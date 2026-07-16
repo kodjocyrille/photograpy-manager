@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}" lang="fr">
+<head>
+    <title th:text="${pageTitle}">Client</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+</head>
+<body>
+<section layout:fragment="content">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div class="flex items-center gap-3">
+            <a href="/clients" class="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-white transition-colors">
+                <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            </a>
+            <div>
+                <h1 class="text-2xl font-bold text-slate-800" th:text="${client.fullName}">Nom</h1>
+                <p class="text-sm text-slate-400" th:text="${client.clientCode}">CLI-2026-0001</p>
+            </div>
+        </div>
+        <div class="flex gap-2">
+            <a th:href="@{/clients/{id}/edit(id=${client.id})}" class="inline-flex items-center gap-2 px-4 py-2.5 bg-white text-slate-700 font-medium rounded-xl border border-slate-300 hover:bg-slate-50 transition-all text-sm">
+                <i data-lucide="pencil" class="w-4 h-4"></i> Modifier
+            </a>
+            <form th:action="@{/clients/{id}/archive(id=${client.id})}" method="post"
+                  onsubmit="return confirm('Archiver ce client ?')">
+                <button type="submit" class="inline-flex items-center gap-2 px-4 py-2.5 bg-white text-red-600 font-medium rounded-xl border border-red-200 hover:bg-red-50 transition-all text-sm">
+                    <i data-lucide="archive" class="w-4 h-4"></i> Archiver
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-6">
+        <!-- Info card -->
+        <div class="md:col-span-1 space-y-4">
+            <div class="bg-white rounded-xl border border-slate-200/60 shadow-sm p-5">
+                <h3 class="font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                    <i data-lucide="user" class="w-4 h-4 text-brand-500"></i> Informations
+                </h3>
+                <dl class="space-y-3 text-sm">
+                    <div><dt class="text-slate-400 text-xs">Email</dt><dd class="font-medium" th:text="${client.email}">email</dd></div>
+                    <div><dt class="text-slate-400 text-xs">Téléphone</dt><dd class="font-medium" th:text="${client.phone}">tel</dd></div>
+                    <div><dt class="text-slate-400 text-xs">Prestation</dt>
+                        <dd><span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-brand-50 text-brand-700" th:text="${client.serviceType.label}">Type</span></dd>
+                    </div>
+                    <div><dt class="text-slate-400 text-xs">Date événement</dt><dd class="font-medium" th:text="${#temporals.format(client.eventDate, 'dd/MM/yyyy')}">date</dd></div>
+                    <div><dt class="text-slate-400 text-xs">Créé le</dt><dd class="font-medium" th:text="${#temporals.format(client.createdAt, 'dd/MM/yyyy HH:mm')}">date</dd></div>
+                    <div th:if="${client.address}">
+                        <dt class="text-slate-400 text-xs">Adresse</dt>
+                        <dd class="font-medium text-sm mt-1" th:text="${client.address}">adresse</dd>
+                    </div>
+                </dl>
+            </div>
+            <!-- Mini-map -->
+            <div th:if="${client.latitude != null and client.longitude != null}" class="bg-white rounded-xl border border-slate-200/60 shadow-sm overflow-hidden">
+                <div class="px-4 py-3 border-b border-slate-100">
+                    <h3 class="font-semibold text-slate-800 text-sm flex items-center gap-2">
+                        <i data-lucide="map-pin" class="w-4 h-4 text-brand-500"></i> Localisation
+                    </h3>
+                </div>
+                <div id="clientMap" class="w-full h-48"></div>
+            </div>
+        </div>
+
+        <!-- Appointments -->
+        <div class="md:col-span-2">
+            <div class="bg-white rounded-xl border border-slate-200/60 shadow-sm">
+                <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+                    <h3 class="font-semibold text-slate-800 flex items-center gap-2">
+                        <i data-lucide="calendar" class="w-4 h-4 text-brand-500"></i>
+                        Rendez-vous (<span th:text="${#lists.size(appointments)}">0</span>)
+                    </h3>
+                    <a th:href="@{/appointments/new(clientId=${client.id})}" class="text-sm text-brand-600 hover:text-brand-700 font-medium flex items-center gap-1">
+                        <i data-lucide="plus" class="w-4 h-4"></i> Ajouter
+                    </a>
+                </div>
+                <div class="divide-y divide-slate-100">
+                    <a th:each="apt : ${appointments}" th:href="@{/appointments/{id}(id=${apt.id})}"
+                       class="flex items-center gap-4 px-5 py-3 hover:bg-slate-50 transition-colors">
+                        <div class="w-2 h-2 rounded-full"
+                             th:classappend="${apt.status.name() == 'CONFIRMED' ? 'bg-emerald-500' : (apt.status.name() == 'PENDING' ? 'bg-amber-500' : (apt.status.name() == 'CANCELLED' ? 'bg-red-500' : (apt.status.name() == 'DONE' ? 'bg-slate-400' : 'bg-purple-500')))}"></div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium text-slate-800" th:text="${apt.type.label}">Type</p>
+                            <p class="text-xs text-slate-400" th:text="${#temporals.format(apt.startTime, 'dd/MM/yyyy HH:mm')}">date</p>
+                        </div>
+                        <span class="text-xs font-medium px-2 py-1 rounded-lg"
+                              th:text="${apt.status.label}"
+                              th:classappend="${apt.status.name() == 'CONFIRMED' ? 'bg-emerald-50 text-emerald-700' : (apt.status.name() == 'PENDING' ? 'bg-amber-50 text-amber-700' : (apt.status.name() == 'CANCELLED' ? 'bg-red-50 text-red-700' : (apt.status.name() == 'DONE' ? 'bg-slate-100 text-slate-600' : 'bg-purple-50 text-purple-700')))}">Statut</span>
+                    </a>
+                    <div th:if="${#lists.isEmpty(appointments)}" class="px-5 py-8 text-center text-slate-400 text-sm">
+                        Aucun rendez-vous pour ce client
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <th:block th:if="${client.latitude != null and client.longitude != null}">
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+                integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+        <script th:inline="javascript">
+            document.addEventListener('turbo:load', function() {
+                var mapEl = document.getElementById('clientMap');
+                if (!mapEl || mapEl.dataset.initialized) return;
+                mapEl.dataset.initialized = 'true';
+                var lat = /*[[${client.latitude}]]*/ 0;
+                var lng = /*[[${client.longitude}]]*/ 0;
+                var map = L.map('clientMap').setView([lat, lng], 15);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; OpenStreetMap', maxZoom: 19
+                }).addTo(map);
+                L.marker([lat, lng]).addTo(map);
+                setTimeout(function() { map.invalidateSize(); }, 200);
+            });
+        </script>
+    </th:block>
+</section>
+</body>
+</html>

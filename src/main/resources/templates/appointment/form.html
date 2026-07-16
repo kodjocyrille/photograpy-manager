@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}" lang="fr">
+<head><title th:text="${pageTitle}">RDV</title></head>
+<body>
+<section layout:fragment="content">
+    <div class="max-w-2xl mx-auto" x-data="appointmentForm()">
+        <div class="flex items-center gap-3 mb-6">
+            <a href="/appointments" class="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-white transition-colors">
+                <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            </a>
+            <h1 class="text-2xl font-bold text-slate-800" th:text="${pageTitle}">Formulaire RDV</h1>
+        </div>
+
+        <!-- Server-side error message (fallback) -->
+        <div th:if="${errorMessage}" class="mb-4 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm flex items-center gap-2">
+            <i data-lucide="alert-circle" class="w-5 h-5 flex-shrink-0"></i>
+            <span th:text="${errorMessage}">Erreur</span>
+        </div>
+
+        <div class="bg-white rounded-xl border border-slate-200/60 shadow-sm p-6">
+            <form th:action="${appointmentForm.id != null} ? @{/appointments/{id}(id=${appointmentForm.id})} : @{/appointments}"
+                  method="post" th:object="${appointmentForm}" class="space-y-5"
+                  data-turbo="false"
+                  @submit.prevent="submitForm($event)">
+
+                <!-- CSRF token hidden input (Thymeleaf auto-adds it, but we also grab it for AJAX) -->
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+
+                <!-- Client -->
+                <div>
+                    <label for="clientId" class="block text-sm font-medium text-slate-700 mb-1.5">Client *</label>
+                    <select id="clientId" th:field="*{clientId}"
+                            class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm bg-white focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none">
+                        <option value="">— Sélectionner un client —</option>
+                        <option th:each="c : ${clients}" th:value="${c.id}" th:text="${c.fullName + ' (' + c.email + ')'}">Client</option>
+                    </select>
+                    <p th:if="${#fields.hasErrors('clientId')}" th:errors="*{clientId}" class="text-red-500 text-xs mt-1"></p>
+                </div>
+
+                <!-- Type RDV -->
+                <div>
+                    <label for="type" class="block text-sm font-medium text-slate-700 mb-1.5">Type de rendez-vous *</label>
+                    <select id="type" th:field="*{type}"
+                            class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm bg-white focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none">
+                        <option value="">— Sélectionner —</option>
+                        <option th:each="t : ${appointmentTypes}" th:value="${t.name()}" th:text="${t.label}">Type</option>
+                    </select>
+                    <p th:if="${#fields.hasErrors('type')}" th:errors="*{type}" class="text-red-500 text-xs mt-1"></p>
+                </div>
+
+                <!-- Date/heure début & fin -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="startTime" class="block text-sm font-medium text-slate-700 mb-1.5">Début *</label>
+                        <input type="datetime-local" id="startTime" th:field="*{startTime}"
+                               class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none">
+                        <p th:if="${#fields.hasErrors('startTime')}" th:errors="*{startTime}" class="text-red-500 text-xs mt-1"></p>
+                    </div>
+                    <div>
+                        <label for="endTime" class="block text-sm font-medium text-slate-700 mb-1.5">Fin *</label>
+                        <input type="datetime-local" id="endTime" th:field="*{endTime}"
+                               class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none">
+                        <p th:if="${#fields.hasErrors('endTime')}" th:errors="*{endTime}" class="text-red-500 text-xs mt-1"></p>
+                    </div>
+                </div>
+
+                <!-- Lieu -->
+                <div>
+                    <label for="location" class="block text-sm font-medium text-slate-700 mb-1.5">Lieu / Adresse</label>
+                    <input type="text" id="location" th:field="*{location}"
+                           class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none"
+                           placeholder="Lieu de la prestation">
+                </div>
+
+                <!-- Photographe -->
+                <div>
+                    <label for="photographerId" class="block text-sm font-medium text-slate-700 mb-1.5">Photographe assigné</label>
+                    <select id="photographerId" th:field="*{photographerId}"
+                            class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm bg-white focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none">
+                        <option value="">— Non assigné —</option>
+                        <option th:each="p : ${photographers}" th:value="${p.id}" th:text="${p.fullName}">Photo</option>
+                    </select>
+                </div>
+
+                <!-- Notes -->
+                <div>
+                    <label for="notes" class="block text-sm font-medium text-slate-700 mb-1.5">Notes</label>
+                    <textarea id="notes" th:field="*{notes}" rows="3"
+                              class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none resize-none"
+                              placeholder="Instructions spéciales..."></textarea>
+                </div>
+
+                <!-- Submit -->
+                <div class="flex gap-3 pt-2">
+                    <button type="submit" :disabled="loading"
+                            class="flex-1 py-2.5 px-4 bg-gradient-to-r from-brand-600 to-brand-700 text-white font-semibold rounded-xl hover:from-brand-700 hover:to-brand-800 transition-all shadow-lg shadow-brand-500/25 text-sm disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                        <!-- Loading spinner -->
+                        <svg x-show="loading" class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                        </svg>
+                        <span x-show="!loading" th:text="${appointmentForm.id != null} ? 'Mettre à jour' : 'Créer le RDV'">Enregistrer</span>
+                        <span x-show="loading" x-cloak>Traitement en cours...</span>
+                    </button>
+                    <a href="/appointments" class="px-6 py-2.5 bg-white text-slate-700 font-medium rounded-xl border border-slate-300 hover:bg-slate-50 transition-all text-sm text-center">Annuler</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function appointmentForm() {
+            return {
+                loading: false,
+                async submitForm(event) {
+                    if (this.loading) return;
+                    this.loading = true;
+
+                    const form = event.target;
+                    const formData = new FormData(form);
+                    const action = form.getAttribute('action') || form.action;
+
+                    // Get CSRF token
+                    const csrfToken = form.querySelector('input[type="hidden"][name]');
+                    const headers = {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    };
+                    if (csrfToken) {
+                        headers[csrfToken.name === '_csrf' ? 'X-CSRF-TOKEN' : csrfToken.name] = csrfToken.value;
+                    }
+
+                    try {
+                        const response = await fetch(action, {
+                            method: 'POST',
+                            body: formData,
+                            headers: headers
+                        });
+
+                        const data = await response.json();
+
+                        if (data.success) {
+                            this.showGlobalToast(data.message, 'success');
+                            // Redirect after short delay so user sees the toast
+                            setTimeout(() => {
+                                if (window.Turbo) {
+                                    Turbo.visit(data.redirectUrl);
+                                } else {
+                                    window.location.href = data.redirectUrl;
+                                }
+                            }, 800);
+                        } else {
+                            this.showGlobalToast(data.message || 'Une erreur est survenue', 'error');
+                            this.loading = false;
+                        }
+                    } catch (err) {
+                        console.error('Erreur soumission:', err);
+                        this.showGlobalToast('Erreur réseau. Veuillez réessayer.', 'error');
+                        this.loading = false;
+                    }
+                },
+                showGlobalToast(msg, type) {
+                    window.dispatchEvent(new CustomEvent('show-toast', { detail: { msg, type } }));
+                }
+            }
+        }
+    </script>
+</section>
+</body>
+</html>

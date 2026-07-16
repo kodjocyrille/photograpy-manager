@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}" lang="fr">
+<head><title>Historique emails</title></head>
+<body>
+<section layout:fragment="content">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div class="flex items-center gap-3">
+            <a href="/admin/alerts" class="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-white transition-colors"><i data-lucide="arrow-left" class="w-5 h-5"></i></a>
+            <h1 class="text-2xl font-bold text-slate-800">Historique des emails</h1>
+        </div>
+        <div class="flex gap-3">
+            <div class="flex items-center gap-2 px-3 py-2 bg-emerald-50 rounded-xl text-sm font-medium text-emerald-700">
+                <i data-lucide="mail-check" class="w-4 h-4"></i> <span th:text="${totalSent}">0</span> envoyés
+            </div>
+            <div class="flex items-center gap-2 px-3 py-2 bg-red-50 rounded-xl text-sm font-medium text-red-700">
+                <i data-lucide="mail-x" class="w-4 h-4"></i> <span th:text="${totalFailed}">0</span> échecs
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-xl border border-slate-200/60 shadow-sm overflow-hidden">
+        <table class="w-full text-sm">
+            <thead class="bg-slate-50 border-b border-slate-200">
+                <tr>
+                    <th class="text-left px-4 py-3 font-semibold text-slate-600">Date</th>
+                    <th class="text-left px-4 py-3 font-semibold text-slate-600">Type</th>
+                    <th class="text-left px-4 py-3 font-semibold text-slate-600">Destinataire</th>
+                    <th class="text-left px-4 py-3 font-semibold text-slate-600 hidden lg:table-cell">Sujet</th>
+                    <th class="text-center px-4 py-3 font-semibold text-slate-600">Statut</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+                <tr th:each="log : ${logs}" class="hover:bg-slate-50/50">
+                    <td class="px-4 py-3 text-slate-500 whitespace-nowrap" th:text="${#temporals.format(log.sentAt, 'dd/MM/yyyy HH:mm')}">Date</td>
+                    <td class="px-4 py-3">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium"
+                              th:text="${log.alertType.label}"
+                              th:classappend="${log.alertType.client} ? 'bg-brand-50 text-brand-700' : 'bg-amber-50 text-amber-700'">Type</span>
+                    </td>
+                    <td class="px-4 py-3">
+                        <p class="font-medium text-slate-800 text-sm" th:text="${log.recipientName ?: '—'}">Nom</p>
+                        <p class="text-xs text-slate-400" th:text="${log.recipientEmail}">email</p>
+                    </td>
+                    <td class="px-4 py-3 text-slate-600 text-xs hidden lg:table-cell max-w-xs truncate" th:text="${log.subject}">Sujet</td>
+                    <td class="px-4 py-3 text-center">
+                        <span th:switch="${log.status.name()}">
+                            <span th:case="'SENT'" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700"><i data-lucide="check-circle" class="w-3 h-3"></i> Envoyé</span>
+                            <span th:case="'FAILED'" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-red-50 text-red-700" th:title="${log.errorMessage}"><i data-lucide="x-circle" class="w-3 h-3"></i> Échec</span>
+                            <span th:case="'PENDING'" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-50 text-amber-700"><i data-lucide="clock" class="w-3 h-3"></i> En attente</span>
+                        </span>
+                    </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(logs)}">
+                    <td colspan="5" class="px-4 py-12 text-center text-slate-400">Aucun email envoyé</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+</body>
+</html>

@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}" lang="fr">
+<head><title th:text="${user.fullName}">Employé</title></head>
+<body>
+<section layout:fragment="content">
+    <!-- Header -->
+    <div class="flex items-center gap-3 mb-6">
+        <a href="/admin/users" class="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-white transition-colors">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+        </a>
+        <h1 class="text-2xl font-bold text-slate-800">Fiche employé</h1>
+    </div>
+
+    <div class="grid gap-6 lg:grid-cols-3">
+        <!-- ═══ LEFT: Profil ═══ -->
+        <div class="lg:col-span-1 space-y-6">
+            <!-- Profile Card -->
+            <div class="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-6">
+                <div class="text-center">
+                    <div class="w-20 h-20 rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-3"
+                         th:classappend="${user.role.name() == 'ADMIN' ? 'bg-purple-100 text-purple-700' : (user.role.name() == 'PHOTOGRAPHER' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700')}"
+                         th:text="${user.initials}">AB</div>
+                    <h2 class="text-lg font-bold text-slate-800" th:text="${user.fullName}">Nom</h2>
+                    <p class="text-sm text-slate-400" th:text="${user.email}">email</p>
+                    <div class="flex items-center justify-center gap-2 mt-2">
+                        <span class="px-2.5 py-1 rounded-md text-xs font-medium"
+                              th:classappend="${user.role.name() == 'ADMIN' ? 'bg-purple-50 text-purple-600' : (user.role.name() == 'PHOTOGRAPHER' ? 'bg-blue-50 text-blue-600' : 'bg-amber-50 text-amber-600')}"
+                              th:text="${user.role.name()}">ROLE</span>
+                        <span th:class="${user.active} ? 'px-2.5 py-1 rounded-md text-xs font-medium bg-emerald-50 text-emerald-700' : 'px-2.5 py-1 rounded-md text-xs font-medium bg-red-50 text-red-600'"
+                              th:text="${user.active} ? 'Actif' : 'Inactif'">Statut</span>
+                    </div>
+                    <p th:if="${user.phone != null and !#strings.isEmpty(user.phone)}" class="text-sm text-slate-500 mt-3 flex items-center justify-center gap-1">
+                        <i data-lucide="phone" class="w-3.5 h-3.5"></i>
+                        <span th:text="${user.phone}">Tél</span>
+                    </p>
+                    <p class="text-xs text-slate-400 mt-2" th:text="'Membre depuis le ' + ${#temporals.format(user.createdAt, 'dd/MM/yyyy')}">Date</p>
+                </div>
+
+                <!-- Spécialités -->
+                <div class="mt-5 pt-5 border-t border-slate-100">
+                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Spécialités</p>
+                    <div th:if="${user.specialties != null and !user.specialties.isEmpty()}" class="flex flex-wrap gap-1.5">
+                        <span th:each="spec : ${user.specialties}"
+                              class="px-2.5 py-1 rounded-lg text-xs font-medium bg-brand-50 text-brand-700 border border-brand-100"
+                              th:text="${spec.label}">Spé</span>
+                    </div>
+                    <p th:if="${user.specialties == null or user.specialties.isEmpty()}" class="text-sm text-slate-400 italic">Aucune spécialité assignée</p>
+                </div>
+
+                <!-- Actions -->
+                <div class="mt-5 pt-5 border-t border-slate-100 space-y-2">
+                    <form th:action="@{/admin/users/{id}/toggle(id=${user.id})}" method="post">
+                        <button type="submit"
+                                th:class="${user.active} ? 'w-full py-2 px-4 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-colors' : 'w-full py-2 px-4 text-sm font-medium text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-xl transition-colors'"
+                                th:text="${user.active} ? 'Désactiver le compte' : 'Réactiver le compte'">Toggle</button>
+                    </form>
+                    <form th:action="@{/admin/users/{id}/delete(id=${user.id})}" method="post"
+                          onsubmit="return confirm('Supprimer définitivement cet employé ? Cette action est irréversible.')">
+                        <button type="submit" class="w-full py-2 px-4 text-sm font-medium text-red-500 hover:bg-red-50 rounded-xl transition-colors">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5 inline"></i> Supprimer
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Password Change -->
+            <div class="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-6">
+                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Changer le mot de passe</p>
+                <form th:action="@{/admin/users/{id}/password(id=${user.id})}" method="post" class="space-y-3">
+                    <input type="password" name="newPassword" required minlength="6" placeholder="Nouveau mot de passe (min. 6 car.)"
+                           class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none">
+                    <button type="submit"
+                            class="w-full py-2 px-4 text-sm font-medium text-brand-600 bg-brand-50 hover:bg-brand-100 rounded-xl transition-colors">
+                        Mettre à jour
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- ═══ RIGHT: Édition + Assignations ═══ -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Edit Form -->
+            <div class="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-6">
+                <h3 class="text-sm font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                    <i data-lucide="edit-3" class="w-4 h-4 text-brand-500"></i>
+                    Modifier le profil
+                </h3>
+                <form th:action="@{/admin/users/{id}/update(id=${user.id})}" method="post" class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Nom complet</label>
+                            <input type="text" name="fullName" th:value="${user.fullName}" required
+                                   class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                            <input type="email" name="email" th:value="${user.email}" required
+                                   class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Téléphone</label>
+                            <input type="tel" name="phone" th:value="${user.phone}"
+                                   class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Rôle</label>
+                            <select name="role"
+                                    class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm bg-white focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none">
+                                <option th:each="r : ${roles}" th:if="${r.name() != 'ADMIN' or r == user.role}" th:value="${r.name()}" th:text="${r.name()}" th:selected="${r == user.role}">ROLE</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Specialties -->
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Spécialités</label>
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+                            <label th:each="et : ${eventTypes}" class="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer text-sm">
+                                <input type="checkbox" name="specialties" th:value="${et.name()}"
+                                       th:checked="${user.specialties.contains(et)}"
+                                       class="w-4 h-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500/20">
+                                <span th:text="${et.label}">Spé</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end">
+                        <button type="submit"
+                                class="px-6 py-2.5 bg-gradient-to-r from-brand-600 to-brand-700 text-white font-semibold rounded-xl hover:from-brand-700 hover:to-brand-800 transition-all shadow-lg shadow-brand-500/25 text-sm">
+                            Enregistrer les modifications
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Rendez-vous assignés -->
+            <div class="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-6">
+                <h3 class="text-sm font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                    <i data-lucide="calendar" class="w-4 h-4 text-emerald-500"></i>
+                    Rendez-vous assignés
+                    <span class="ml-auto px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600"
+                          th:text="${#lists.size(appointments)}">0</span>
+                </h3>
+                <div th:if="${!#lists.isEmpty(appointments)}" class="divide-y divide-slate-100">
+                    <a th:each="apt : ${appointments}" th:href="@{/appointments/{id}(id=${apt.id})}"
+                       class="flex items-center gap-4 py-3 hover:bg-slate-50 -mx-2 px-2 rounded-lg transition-colors">
+                        <div class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+                             th:classappend="${apt.status.name() == 'CONFIRMED' ? 'bg-emerald-50 text-emerald-600' : (apt.status.name() == 'PENDING' ? 'bg-amber-50 text-amber-600' : (apt.status.name() == 'CANCELLED' ? 'bg-red-50 text-red-600' : 'bg-slate-100 text-slate-500'))}">
+                            <i data-lucide="calendar" class="w-4 h-4"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium text-slate-700 truncate" th:text="${apt.client.fullName}">Client</p>
+                            <p class="text-xs text-slate-400" th:text="${apt.type.label + ' — ' + #temporals.format(apt.startTime, 'dd/MM/yyyy HH:mm')}">Type</p>
+                        </div>
+                        <span class="px-2 py-0.5 rounded-md text-[10px] font-medium"
+                              th:classappend="${apt.status.name() == 'CONFIRMED' ? 'bg-emerald-50 text-emerald-600' : (apt.status.name() == 'PENDING' ? 'bg-amber-50 text-amber-600' : (apt.status.name() == 'CANCELLED' ? 'bg-red-50 text-red-600' : 'bg-slate-100 text-slate-500'))}"
+                              th:text="${apt.status.label}">Statut</span>
+                    </a>
+                </div>
+                <div th:if="${#lists.isEmpty(appointments)}" class="text-center py-8 text-slate-400">
+                    <i data-lucide="calendar-x" class="w-8 h-8 mx-auto mb-2 opacity-40"></i>
+                    <p class="text-xs">Aucun rendez-vous assigné</p>
+                </div>
+            </div>
+
+            <!-- Dossiers assignés -->
+            <div class="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-6">
+                <h3 class="text-sm font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                    <i data-lucide="folder-open" class="w-4 h-4 text-brand-500"></i>
+                    Dossiers assignés
+                    <span class="ml-auto px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600"
+                          th:text="${#lists.size(dossiers)}">0</span>
+                </h3>
+                <div th:if="${!#lists.isEmpty(dossiers)}" class="divide-y divide-slate-100">
+                    <a th:each="d : ${dossiers}" th:href="@{/workspace/{id}(id=${d.id})}"
+                       class="flex items-center gap-4 py-3 hover:bg-slate-50 -mx-2 px-2 rounded-lg transition-colors">
+                        <div class="w-10 h-10 rounded-lg bg-brand-50 text-brand-600 flex items-center justify-center flex-shrink-0">
+                            <i data-lucide="folder" class="w-4 h-4"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium text-slate-700 truncate">
+                                <span th:text="${d.dossierCode}">DOS-XX</span>
+                                <span class="text-slate-400">—</span>
+                                <span th:text="${d.client.fullName}">Client</span>
+                            </p>
+                            <p class="text-xs text-slate-400" th:text="${d.serviceType.label}">Type</p>
+                        </div>
+                        <span class="px-2 py-0.5 rounded-md text-[10px] font-medium bg-slate-100 text-slate-600"
+                              th:text="${d.status.label}">Statut</span>
+                    </a>
+                </div>
+                <div th:if="${#lists.isEmpty(dossiers)}" class="text-center py-8 text-slate-400">
+                    <i data-lucide="folder-x" class="w-8 h-8 mx-auto mb-2 opacity-40"></i>
+                    <p class="text-xs">Aucun dossier assigné</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+</body>
+</html>

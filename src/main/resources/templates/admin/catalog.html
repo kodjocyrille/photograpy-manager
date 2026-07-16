@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}" lang="fr">
+<head><title>Prestations</title></head>
+<body>
+<section layout:fragment="content">
+    <div x-data="{ activeTab: /*[[${activeTab}]]*/ 'catalog', showStatusModal: false, statusId: null, statusClient: '', statusPrestation: '', currentStatus: '', currentStatusLabel: '' }" x-init="$nextTick(() => lucide.createIcons())">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <h1 class="text-2xl font-bold text-slate-800">Prestations</h1>
+        </div>
+
+        <!-- ═══════ TABS (Alpine.js — smooth, no reload) ═══════ -->
+        <div class="flex gap-1 bg-slate-100 rounded-xl p-1 mb-6 relative">
+            <button @click="activeTab = 'catalog'"
+                    class="flex-1 text-center px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ease-out relative z-10"
+                    :class="activeTab === 'catalog' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'">
+                <span class="flex items-center justify-center gap-2">
+                    <i data-lucide="package" class="w-4 h-4"></i> Catalogue
+                    <span class="bg-brand-100 text-brand-700 text-xs font-semibold px-2 py-0.5 rounded-full" th:text="${#lists.size(items)}">0</span>
+                </span>
+            </button>
+            <button @click="activeTab = 'assignments'"
+                    class="flex-1 text-center px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ease-out relative z-10"
+                    :class="activeTab === 'assignments' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'">
+                <span class="flex items-center justify-center gap-2">
+                    <i data-lucide="user-check" class="w-4 h-4"></i> Assignations
+                    <span class="bg-blue-100 text-blue-700 text-xs font-semibold px-2 py-0.5 rounded-full" th:text="${#lists.size(assignments)}">0</span>
+                </span>
+            </button>
+        </div>
+
+        <!-- ═══════ TAB 1 : CATALOGUE ═══════ -->
+        <div x-show="activeTab === 'catalog'"
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0 translate-y-1"
+             x-transition:enter-end="opacity-100 translate-y-0"
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100 translate-y-0"
+             x-transition:leave-end="opacity-0 translate-y-1">
+            <!-- Add form -->
+            <div class="bg-white rounded-xl border border-slate-200/60 shadow-sm p-5 mb-6" x-data="{showForm:false}">
+                <button @click="showForm=!showForm" class="text-sm font-medium text-brand-600 flex items-center gap-2 hover:text-brand-700">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i> Ajouter une prestation
+                </button>
+                <form x-show="showForm" x-cloak
+                      x-transition:enter="transition ease-out duration-200"
+                      x-transition:enter-start="opacity-0 -translate-y-2"
+                      x-transition:enter-end="opacity-100 translate-y-0"
+                      th:action="@{/admin/catalog}" method="post" class="mt-4 grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                    <select name="type" required class="px-3 py-2 rounded-xl border border-slate-300 text-sm bg-white">
+                        <option value="">Type</option>
+                        <option th:each="t : ${eventTypes}" th:value="${t.name()}" th:text="${t.label}">Type</option>
+                    </select>
+                    <input type="text" name="description" placeholder="Description" required class="px-3 py-2 rounded-xl border border-slate-300 text-sm">
+                    <input type="number" name="minDurationHours" placeholder="Durée (h)" min="1" value="2" class="px-3 py-2 rounded-xl border border-slate-300 text-sm">
+                    <input type="number" name="basePrice" placeholder="Prix (FCFA)" step="1000" min="0" required class="px-3 py-2 rounded-xl border border-slate-300 text-sm">
+                    <button type="submit" class="px-4 py-2 bg-brand-600 text-white rounded-xl text-sm font-medium hover:bg-brand-700 transition-colors">Ajouter</button>
+                </form>
+            </div>
+
+            <div class="bg-white rounded-xl border border-slate-200/60 shadow-sm overflow-visible">
+                <table class="w-full text-sm">
+                    <thead class="bg-slate-50 border-b border-slate-200">
+                        <tr>
+                            <th class="text-left px-4 py-3 font-semibold text-slate-600">Type</th>
+                            <th class="text-left px-4 py-3 font-semibold text-slate-600">Description</th>
+                            <th class="text-left px-4 py-3 font-semibold text-slate-600 hidden md:table-cell">Durée min</th>
+                            <th class="text-right px-4 py-3 font-semibold text-slate-600">Prix de base</th>
+                            <th class="text-center px-4 py-3 font-semibold text-slate-600">Statut</th>
+                            <th class="text-right px-4 py-3 font-semibold text-slate-600">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        <th:block th:each="item : ${items}">
+                        <tr x-data="{editing: false}" class="hover:bg-slate-50/50 transition-colors" :class="editing && 'bg-brand-50/30'">
+                            <!-- ── Mode lecture ── -->
+                            <template x-if="!editing">
+                                <td class="px-4 py-3"><span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-brand-50 text-brand-700" th:text="${item.type.label}">Type</span></td>
+                            </template>
+                            <template x-if="!editing">
+                                <td class="px-4 py-3 text-slate-800 font-medium" th:text="${item.description}">Desc</td>
+                            </template>
+                            <template x-if="!editing">
+                                <td class="px-4 py-3 text-slate-500 hidden md:table-cell" th:text="${item.minDurationHours} + 'h'">2h</td>
+                            </template>
+                            <template x-if="!editing">
+                                <td class="px-4 py-3 text-right font-semibold" th:text="${#numbers.formatDecimal(item.basePrice, 0, 'COMMA', 0, 'POINT')} + ' FCFA'">0 FCFA</td>
+                            </template>
+                            <template x-if="!editing">
+                                <td class="px-4 py-3 text-center">
+                                    <span th:if="${item.active}" class="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium bg-emerald-50 text-emerald-700">Actif</span>
+                                    <span th:unless="${item.active}" class="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium bg-slate-100 text-slate-500">Inactif</span>
+                                </td>
+                            </template>
+                            <template x-if="!editing">
+                                <td class="px-4 py-3 text-right">
+                                    <div class="flex items-center justify-end gap-1">
+                                        <button @click="editing=true; $nextTick(() => lucide.createIcons())" type="button" class="p-1.5 text-slate-400 hover:text-brand-600 rounded-lg hover:bg-brand-50 transition-colors" title="Modifier">
+                                            <i data-lucide="pencil" class="w-4 h-4"></i>
+                                        </button>
+                                        <form th:action="@{/admin/catalog/{id}/toggle(id=${item.id})}" method="post" class="inline">
+                                            <button type="submit" class="p-1.5 text-slate-400 hover:text-amber-600 rounded-lg hover:bg-amber-50 transition-colors" th:title="${item.active} ? 'Désactiver' : 'Activer'">
+                                                <i data-lucide="power" class="w-4 h-4"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </template>
+                            <!-- ── Mode édition ── -->
+                            <template x-if="editing">
+                                <td colspan="6" class="px-4 py-3">
+                                    <form th:action="@{/admin/catalog/{id}(id=${item.id})}" method="post"
+                                          class="grid sm:grid-cols-2 lg:grid-cols-6 gap-3 items-end">
+                                        <div>
+                                            <label class="block text-xs text-slate-400 mb-1">Type</label>
+                                            <select name="type" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm bg-white">
+                                                <option th:each="t : ${eventTypes}" th:value="${t.name()}" th:text="${t.label}" th:selected="${t == item.type}">Type</option>
+                                            </select>
+                                        </div>
+                                        <div class="lg:col-span-2">
+                                            <label class="block text-xs text-slate-400 mb-1">Description</label>
+                                            <input type="text" name="description" th:value="${item.description}" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs text-slate-400 mb-1">Durée (h)</label>
+                                            <input type="number" name="minDurationHours" th:value="${item.minDurationHours}" min="1" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs text-slate-400 mb-1">Prix (FCFA)</label>
+                                            <input type="number" name="basePrice" th:value="${item.basePrice}" step="1000" min="0" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm">
+                                        </div>
+                                        <div class="flex gap-2">
+                                            <button type="submit" class="flex-1 px-3 py-2 bg-brand-600 text-white rounded-xl text-sm font-medium hover:bg-brand-700 transition-colors flex items-center justify-center gap-1.5">
+                                                <i data-lucide="check" class="w-3.5 h-3.5"></i> Sauver
+                                            </button>
+                                            <button @click="editing=false" type="button" class="px-3 py-2 bg-white text-slate-600 rounded-xl text-sm border border-slate-300 hover:bg-slate-50 transition-colors">
+                                                <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                                            </button>
+                                        </div>
+                                    </form>
+                                </td>
+                            </template>
+                        </tr>
+                        </th:block>
+                        <tr th:if="${#lists.isEmpty(items)}">
+                            <td colspan="6" class="px-4 py-12 text-center text-slate-400">Aucune prestation dans le catalogue</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ═══════ TAB 2 : ASSIGNATIONS ═══════ -->
+        <div x-show="activeTab === 'assignments'"
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0 translate-y-1"
+             x-transition:enter-end="opacity-100 translate-y-0"
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100 translate-y-0"
+             x-transition:leave-end="opacity-0 translate-y-1"
+             x-cloak>
+            <!-- Formulaire d'assignation -->
+            <div class="bg-white rounded-xl border border-slate-200/60 shadow-sm p-5 mb-6" x-data="{showAssign:false, basePrice:0}">
+                <button @click="showAssign=!showAssign" class="text-sm font-medium text-brand-600 flex items-center gap-2 hover:text-brand-700">
+                    <i data-lucide="link" class="w-4 h-4"></i> Assigner une prestation à un client
+                </button>
+                <form x-show="showAssign" x-cloak
+                      x-transition:enter="transition ease-out duration-200"
+                      x-transition:enter-start="opacity-0 -translate-y-2"
+                      x-transition:enter-end="opacity-100 translate-y-0"
+                      th:action="@{/admin/catalog/assign}" method="post" class="mt-4 space-y-4">
+                    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        <div>
+                            <label class="block text-xs text-slate-500 font-medium mb-1.5">Client *</label>
+                            <select name="clientId" required class="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm bg-white">
+                                <option value="">— Sélectionner un client —</option>
+                                <option th:each="c : ${clients}" th:value="${c.id}" th:text="${c.fullName}">Client</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-500 font-medium mb-1.5">Prestation *</label>
+                            <select name="serviceCatalogId" required class="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm bg-white"
+                                    @change="let opt = $el.options[$el.selectedIndex]; basePrice = opt.dataset.price || 0; $refs.agreedPrice.value = basePrice">
+                                <option value="">— Sélectionner une prestation —</option>
+                                <option th:each="s : ${items}" th:if="${s.active}"
+                                        th:value="${s.id}"
+                                        th:text="${s.type.label + ' — ' + s.description}"
+                                        th:data-price="${s.basePrice}">Prestation</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-500 font-medium mb-1.5">Prix convenu (FCFA)</label>
+                            <input type="number" name="agreedPrice" x-ref="agreedPrice" step="1000" min="0"
+                                   class="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm" placeholder="Prix catalogue par défaut">
+                        </div>
+                    </div>
+                    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        <div>
+                            <label class="block text-xs text-slate-500 font-medium mb-1.5">Date planifiée *</label>
+                            <input type="datetime-local" name="scheduledDate" required
+                                   class="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-500 font-medium mb-1.5">Date fin <span class="text-slate-400">(optionnel)</span></label>
+                            <input type="datetime-local" name="scheduledEndDate"
+                                   class="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-500 font-medium mb-1.5">Notes</label>
+                            <input type="text" name="notes" class="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm" placeholder="Commentaire optionnel">
+                        </div>
+                    </div>
+                    <button type="submit" class="px-5 py-2.5 bg-gradient-to-r from-brand-600 to-brand-700 text-white rounded-xl text-sm font-semibold hover:from-brand-700 hover:to-brand-800 transition-all shadow-lg shadow-brand-500/25 flex items-center gap-2">
+                        <i data-lucide="check-circle" class="w-4 h-4"></i> Assigner la prestation
+                    </button>
+                </form>
+            </div>
+
+            <!-- Tableau des assignations -->
+            <div class="bg-white rounded-xl border border-slate-200/60 shadow-sm overflow-visible">
+                <table class="w-full text-sm">
+                    <thead class="bg-slate-50 border-b border-slate-200">
+                        <tr>
+                            <th class="text-left px-4 py-3 font-semibold text-slate-600">Client</th>
+                            <th class="text-left px-4 py-3 font-semibold text-slate-600">Prestation</th>
+                            <th class="text-right px-4 py-3 font-semibold text-slate-600 hidden md:table-cell">Prix convenu</th>
+                            <th class="text-left px-4 py-3 font-semibold text-slate-600 hidden md:table-cell">Date planifiée</th>
+                            <th class="text-center px-4 py-3 font-semibold text-slate-600">Statut</th>
+                            <th class="text-right px-4 py-3 font-semibold text-slate-600">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        <tr th:each="a : ${assignments}" class="hover:bg-slate-50/50 transition-colors">
+                            <td class="px-4 py-3">
+                                <a th:href="@{/clients/{id}(id=${a.client.id})}" class="text-brand-600 hover:text-brand-700 font-medium" th:text="${a.client.fullName}">Client</a>
+                            </td>
+                            <td class="px-4 py-3">
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-brand-50 text-brand-700 mr-1" th:text="${a.serviceCatalog.type.label}">Type</span>
+                                <span class="text-slate-700 text-xs" th:text="${a.serviceCatalog.description}">Desc</span>
+                            </td>
+                            <td class="px-4 py-3 text-right font-semibold hidden md:table-cell" th:text="${#numbers.formatDecimal(a.agreedPrice, 0, 'COMMA', 0, 'POINT')} + ' FCFA'">0</td>
+                            <td class="px-4 py-3 hidden md:table-cell">
+                                <span th:if="${a.scheduledDate != null}" class="text-sm text-slate-700" th:text="${#temporals.format(a.scheduledDate, 'dd/MM/yyyy HH:mm')}">Date</span>
+                                <span th:unless="${a.scheduledDate != null}" class="text-xs text-slate-400">Non planifiée</span>
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium"
+                                      th:text="${a.status.label}"
+                                      th:classappend="${a.status.name() == 'EN_ATTENTE' ? 'bg-amber-50 text-amber-700' : (a.status.name() == 'EN_COURS' ? 'bg-blue-50 text-blue-700' : (a.status.name() == 'TERMINEE' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'))}">Statut</span>
+                                <!-- Facture liée -->
+                                <a th:if="${a.invoice != null}" th:href="@{/billing/invoices/{id}(id=${a.invoice.id})}"
+                                   class="block text-xs text-brand-600 hover:underline mt-1" th:text="'📄 ' + ${a.invoice.invoiceNumber}">Facture</a>
+                            </td>
+                            <td class="px-4 py-3 text-right">
+                                <div class="flex items-center justify-end gap-1">
+                                    <!-- Changer le statut -->
+                                    <div>
+                                        <button @click="showStatusModal = true; statusId = +$el.dataset.aid; statusClient = $el.dataset.aclient; statusPrestation = $el.dataset.aprestation; currentStatus = $el.dataset.astatus; currentStatusLabel = $el.dataset.astatusLabel; $nextTick(() => lucide.createIcons())"
+                                                th:attr="data-aid=${a.id},data-aclient=${a.client.fullName},data-aprestation=${a.serviceCatalog.description},data-astatus=${a.status.name()},data-astatus-label=${a.status.label}"
+                                                type="button" class="p-1.5 text-slate-400 hover:text-brand-600 rounded-lg hover:bg-brand-50 transition-colors" title="Changer le statut">
+                                            <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                                        </button>
+                                    </div>
+                                    <!-- Générer facture (uniquement si TERMINEE et pas encore facturé) -->
+                                    <form th:if="${a.status.name() == 'TERMINEE' && a.invoice == null}"
+                                          th:action="@{/admin/catalog/assignments/{id}/invoice(id=${a.id})}" method="post" class="inline">
+                                        <button type="submit" class="p-1.5 text-emerald-500 hover:text-emerald-700 rounded-lg hover:bg-emerald-50 transition-colors" title="Générer la facture">
+                                            <i data-lucide="file-plus" class="w-4 h-4"></i>
+                                        </button>
+                                    </form>
+                                    <!-- Supprimer -->
+                                    <button @click="$dispatch('open-delete-modal', {id: +$el.dataset.aid, client: $el.dataset.aclient, prestation: $el.dataset.aprestation})"
+                                            th:attr="data-aid=${a.id},data-aclient=${a.client.fullName},data-aprestation=${a.serviceCatalog.description}"
+                                            type="button" class="p-1.5 text-slate-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors" title="Supprimer">
+                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(assignments)}">
+                            <td colspan="6" class="px-4 py-12 text-center text-slate-400">
+                                <div class="flex flex-col items-center gap-2">
+                                    <i data-lucide="inbox" class="w-8 h-8 text-slate-300"></i>
+                                    <p>Aucune prestation assignée pour le moment</p>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ═══════ MODAL SUPPRESSION ASSIGNATION ═══════ -->
+        <!-- Modal changement statut assignation -->
+        <div x-show="showStatusModal" x-cloak
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             class="fixed inset-0 z-50 flex items-center justify-center p-4"
+             @keydown.escape.window="showStatusModal = false">
+            <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="showStatusModal = false"></div>
+            <div class="relative bg-white rounded-2xl shadow-2xl border border-slate-200/60 w-full max-w-md overflow-hidden" @click.stop>
+                <div class="px-6 pt-6 pb-4">
+                    <div class="flex items-start gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-brand-50 flex items-center justify-center flex-shrink-0">
+                            <i data-lucide="refresh-cw" class="w-6 h-6 text-brand-600"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <h3 class="text-lg font-bold text-slate-800">Changer le statut</h3>
+                            <p class="mt-1 text-sm text-slate-500">
+                                <span class="font-semibold text-slate-700" x-text="statusPrestation"></span>
+                                pour
+                                <span class="font-semibold text-slate-700" x-text="statusClient"></span>
+                            </p>
+                            <p class="mt-2 text-xs text-slate-400">
+                                Statut actuel :
+                                <span class="font-semibold text-slate-600" x-text="currentStatusLabel"></span>
+                            </p>
+                        </div>
+                        <button @click="showStatusModal = false" type="button"
+                                class="ml-auto p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
+                            <i data-lucide="x" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="px-6 pb-6 grid gap-2">
+                    <form th:each="ps : ${prestationStatuses}"
+                          x-show="statusId"
+                          :action="'/admin/catalog/assignments/' + statusId + '/status'"
+                          method="post"
+                          data-turbo="false">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                        <input type="hidden" name="status" th:value="${ps.name()}">
+                        <button type="submit"
+                                th:attr="data-status=${ps.name()}"
+                                :disabled="currentStatus === $el.dataset.status"
+                                class="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl border text-left transition-colors disabled:cursor-not-allowed"
+                                :class="currentStatus === $el.dataset.status ? 'border-slate-200 bg-slate-50 text-slate-400' : 'border-slate-200 bg-white text-slate-700 hover:border-brand-200 hover:bg-brand-50'">
+                            <span class="font-medium text-sm" th:text="${ps.label}">Statut</span>
+                            <span x-show="currentStatus === $el.dataset.status" class="text-xs font-semibold text-slate-400">Actuel</span>
+                            <i x-show="currentStatus !== $el.dataset.status" data-lucide="arrow-right" class="w-4 h-4 text-brand-500"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div x-data="{showDeleteModal: false, deleteId: null, deleteClient: '', deletePrestation: ''}"
+             @open-delete-modal.window="showDeleteModal = true; deleteId = $event.detail.id; deleteClient = $event.detail.client; deletePrestation = $event.detail.prestation; $nextTick(() => lucide.createIcons())">
+
+            <!-- Backdrop -->
+            <div x-show="showDeleteModal" x-cloak
+                 x-transition:enter="transition ease-out duration-200"
+                 x-transition:enter-start="opacity-0"
+                 x-transition:enter-end="opacity-100"
+                 x-transition:leave="transition ease-in duration-150"
+                 x-transition:leave-start="opacity-100"
+                 x-transition:leave-end="opacity-0"
+                 class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50"
+                 @click="showDeleteModal = false">
+            </div>
+
+            <!-- Modal -->
+            <div x-show="showDeleteModal" x-cloak
+                 x-transition:enter="transition ease-out duration-200"
+                 x-transition:enter-start="opacity-0 scale-95 translate-y-4"
+                 x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                 x-transition:leave="transition ease-in duration-150"
+                 x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+                 x-transition:leave-end="opacity-0 scale-95 translate-y-4"
+                 class="fixed inset-0 z-50 flex items-center justify-center p-4"
+                 @keydown.escape.window="showDeleteModal = false">
+                <div class="bg-white rounded-2xl shadow-2xl border border-slate-200/60 w-full max-w-md overflow-hidden" @click.stop>
+                    <!-- Header -->
+                    <div class="px-6 pt-6 pb-4 text-center">
+                        <div class="mx-auto w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mb-4">
+                            <i data-lucide="alert-triangle" class="w-7 h-7 text-red-500"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-slate-800">Supprimer cette assignation ?</h3>
+                        <p class="mt-2 text-sm text-slate-500">
+                            Vous êtes sur le point de supprimer la prestation
+                            <span class="font-semibold text-slate-700" x-text="deletePrestation"></span>
+                            assignée à
+                            <span class="font-semibold text-slate-700" x-text="deleteClient"></span>.
+                        </p>
+                        <p class="mt-1.5 text-xs text-red-500 font-medium">Cette action est irréversible.</p>
+                    </div>
+                    <!-- Actions -->
+                    <div class="px-6 pb-6 flex gap-3">
+                        <button @click="showDeleteModal = false" type="button"
+                                class="flex-1 px-4 py-2.5 bg-white text-slate-700 rounded-xl text-sm font-medium border border-slate-300 hover:bg-slate-50 transition-colors">
+                            Annuler
+                        </button>
+                        <form x-show="deleteId" :action="'/admin/catalog/assignments/' + deleteId + '/delete'" method="post" data-turbo="false" class="flex-1">
+                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                            <button type="submit"
+                                    class="w-full px-4 py-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl text-sm font-semibold hover:from-red-600 hover:to-red-700 transition-all shadow-lg shadow-red-500/25 flex items-center justify-center gap-2">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i> Supprimer
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+</body>
+</html>
+

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}" lang="fr">
+<head><title th:text="${pageTitle}">Devis</title></head>
+<body>
+<section layout:fragment="content">
+    <div class="max-w-3xl mx-auto">
+        <div class="flex items-center gap-3 mb-6">
+            <a href="/billing/quotes" class="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-white transition-colors"><i data-lucide="arrow-left" class="w-5 h-5"></i></a>
+            <h1 class="text-2xl font-bold text-slate-800" th:text="${pageTitle}">Nouveau devis</h1>
+        </div>
+
+        <div class="bg-white rounded-xl border border-slate-200/60 shadow-sm p-6"
+             x-data="{
+                lines: [],
+                init() {
+                    /* Pre-populate from existing form data */
+                    const existing = document.querySelectorAll('[data-line]');
+                    if (existing.length > 0) {
+                        existing.forEach(el => {
+                            this.lines.push({desc: el.dataset.desc, qty: parseInt(el.dataset.qty), price: parseFloat(el.dataset.price)});
+                        });
+                    } else {
+                        this.addLine();
+                    }
+                },
+                addLine() { this.lines.push({desc:'', qty:1, price:0}); },
+                removeLine(i) { if(this.lines.length > 1) this.lines.splice(i,1); },
+                get total() { return this.lines.reduce((s,l) => s + (l.qty * l.price), 0); }
+             }">
+            <form th:action="${quoteForm.id != null} ? @{/billing/quotes/{id}(id=${quoteForm.id})} : @{/billing/quotes}"
+                  method="post" th:object="${quoteForm}">
+                <!-- Client -->
+                <div class="mb-5">
+                    <label class="block text-sm font-medium text-slate-700 mb-1.5">Client *</label>
+                    <select th:field="*{clientId}" required class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm bg-white focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none">
+                        <option value="">— Sélectionner —</option>
+                        <option th:each="c : ${clients}" th:value="${c.id}" th:text="${c.fullName + ' (' + c.email + ')'}">Client</option>
+                    </select>
+                </div>
+
+                <!-- Valid until -->
+                <div class="mb-5">
+                    <label class="block text-sm font-medium text-slate-700 mb-1.5">Valide jusqu'au</label>
+                    <input type="date" th:field="*{validUntil}" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none">
+                </div>
+
+                <!-- Dynamic lines -->
+                <div class="mb-5">
+                    <div class="flex items-center justify-between mb-3">
+                        <label class="text-sm font-medium text-slate-700">Lignes du devis</label>
+                        <button type="button" @click="addLine()" class="text-xs text-brand-600 hover:text-brand-700 font-medium flex items-center gap-1">
+                            <i data-lucide="plus" class="w-3 h-3"></i> Ajouter
+                        </button>
+                    </div>
+                    <div class="space-y-3">
+                        <template x-for="(line, i) in lines" :key="i">
+                            <div class="grid grid-cols-12 gap-2 items-start">
+                                <div class="col-span-6">
+                                    <input type="text" x-model="line.desc" :name="'lines['+i+'].description'" placeholder="Description" required
+                                           class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none">
+                                </div>
+                                <div class="col-span-2">
+                                    <input type="number" x-model.number="line.qty" :name="'lines['+i+'].quantity'" min="1" placeholder="Qté"
+                                           class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none">
+                                </div>
+                                <div class="col-span-3">
+                                    <input type="number" x-model.number="line.price" :name="'lines['+i+'].unitPrice'" step="1000" min="0" placeholder="Prix"
+                                           class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none">
+                                </div>
+                                <div class="col-span-1 flex justify-center">
+                                    <button type="button" @click="removeLine(i)" class="p-2 text-red-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors" x-show="lines.length > 1">
+                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Total -->
+                <div class="bg-slate-50 rounded-xl p-4 mb-5 flex items-center justify-between">
+                    <span class="font-medium text-slate-700">Total</span>
+                    <span class="text-xl font-bold text-slate-800" x-text="total.toLocaleString('fr-FR') + ' FCFA'">0 FCFA</span>
+                </div>
+
+                <div class="flex gap-3">
+                    <button type="submit" class="flex-1 py-2.5 px-4 bg-gradient-to-r from-brand-600 to-brand-700 text-white font-semibold rounded-xl hover:from-brand-700 hover:to-brand-800 transition-all shadow-lg shadow-brand-500/25 text-sm">
+                        <span th:text="${quoteForm.id != null} ? 'Mettre à jour' : 'Créer le devis'">Enregistrer</span>
+                    </button>
+                    <a href="/billing/quotes" class="px-6 py-2.5 bg-white text-slate-700 font-medium rounded-xl border border-slate-300 hover:bg-slate-50 transition-all text-sm text-center">Annuler</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+</body>
+</html>

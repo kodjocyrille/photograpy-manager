@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="fr">
+<body>
+<!-- Dossier Card Fragment -->
+<div th:fragment="dossier-card(d)">
+    <a th:href="@{/workspace/{id}(id=${d.id})}"
+       class="block bg-white rounded-xl border border-slate-200/60 shadow-sm p-4 hover:shadow-md transition-all hover:-translate-y-0.5 cursor-pointer">
+        <div class="flex items-start justify-between mb-2">
+            <span class="text-xs font-mono text-slate-400" th:text="${d.dossierCode}">DOS</span>
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold"
+                  th:text="${d.priority.label}"
+                  th:classappend="${d.priority.name() == 'VIP' ? 'bg-purple-100 text-purple-700' : (d.priority.name() == 'URGENT' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-500')}">P</span>
+        </div>
+        <p class="font-medium text-slate-800 text-sm mb-1" th:text="${d.client.fullName}">Client</p>
+        <p class="text-xs text-slate-400 mb-2" th:text="${d.serviceType.label}">Type</p>
+        <div class="flex items-center justify-between">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-medium"
+                  th:text="${d.status.label}"
+                  th:classappend="${d.status.name() == 'COMPLETED' ? 'bg-emerald-50 text-emerald-700' : (d.status.name() == 'RETOUCHING' ? 'bg-blue-50 text-blue-700' : (d.status.name() == 'AWAITING_VALIDATION' ? 'bg-amber-50 text-amber-700' : (d.status.name() == 'CORRECTIONS_REQUESTED' ? 'bg-red-50 text-red-700' : 'bg-slate-100 text-slate-600')))}">S</span>
+            <span class="text-[10px] text-slate-400" th:if="${d.sessionDate != null}" th:text="${#temporals.format(d.sessionDate, 'dd/MM')}">Date</span>
+        </div>
+    </a>
+</div>
+</body>
+</html>

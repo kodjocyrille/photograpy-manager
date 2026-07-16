@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}" lang="fr">
+<head><title th:text="${pageTitle}">RDV</title></head>
+<body>
+<section layout:fragment="content">
+    <div class="max-w-3xl mx-auto">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <div class="flex items-center gap-3">
+                <a href="/appointments" class="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-white transition-colors">
+                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                </a>
+                <div>
+                    <h1 class="text-2xl font-bold text-slate-800" th:text="${appointment.type.label}">Type</h1>
+                    <p class="text-sm text-slate-400">
+                        <a th:href="@{/clients/{id}(id=${appointment.client.id})}" class="hover:text-brand-600"
+                           th:text="${appointment.client.fullName}">Client</a>
+                    </p>
+                </div>
+            </div>
+            <a th:href="@{/appointments/{id}/edit(id=${appointment.id})}"
+               class="inline-flex items-center gap-2 px-4 py-2.5 bg-white text-slate-700 font-medium rounded-xl border border-slate-300 hover:bg-slate-50 transition-all text-sm">
+                <i data-lucide="pencil" class="w-4 h-4"></i> Modifier
+            </a>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-6">
+            <!-- Info -->
+            <div class="md:col-span-2 bg-white rounded-xl border border-slate-200/60 shadow-sm p-5 space-y-4">
+                <div class="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                        <p class="text-slate-400 text-xs">Date & heure</p>
+                        <p class="font-medium" th:text="${#temporals.format(appointment.startTime, 'dd/MM/yyyy HH:mm')} + ' → ' + ${#temporals.format(appointment.endTime, 'HH:mm')}">Horaire</p>
+                    </div>
+                    <div>
+                        <p class="text-slate-400 text-xs">Lieu</p>
+                        <p class="font-medium" th:text="${appointment.location ?: 'Non précisé'}">Lieu</p>
+                    </div>
+                    <div>
+                        <p class="text-slate-400 text-xs">Photographe</p>
+                        <p class="font-medium" th:text="${appointment.photographer != null ? appointment.photographer.fullName : 'Non assigné'}">Photo</p>
+                    </div>
+                    <div>
+                        <p class="text-slate-400 text-xs">Créé le</p>
+                        <p class="font-medium" th:text="${#temporals.format(appointment.createdAt, 'dd/MM/yyyy HH:mm')}">Date</p>
+                    </div>
+                </div>
+                <div th:if="${appointment.notes != null && !appointment.notes.isEmpty()}">
+                    <p class="text-slate-400 text-xs mb-1">Notes</p>
+                    <p class="text-sm bg-slate-50 rounded-lg p-3" th:text="${appointment.notes}">Notes</p>
+                </div>
+            </div>
+
+            <!-- Status -->
+            <div class="bg-white rounded-xl border border-slate-200/60 shadow-sm p-5">
+                <h3 class="font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                    <i data-lucide="activity" class="w-4 h-4 text-brand-500"></i> Statut
+                </h3>
+                <div class="mb-4">
+                    <span class="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium"
+                          th:text="${appointment.status.label}"
+                          th:classappend="${appointment.status.name() == 'CONFIRMED' ? 'bg-emerald-50 text-emerald-700' : (appointment.status.name() == 'PENDING' ? 'bg-amber-50 text-amber-700' : (appointment.status.name() == 'CANCELLED' ? 'bg-red-50 text-red-700' : (appointment.status.name() == 'DONE' ? 'bg-slate-100 text-slate-600' : 'bg-purple-50 text-purple-700')))}">Statut</span>
+                </div>
+                <p class="text-xs text-slate-400 mb-2">Changer le statut :</p>
+                <div class="space-y-2">
+                    <form th:each="s : ${statuses}" th:if="${s != appointment.status}"
+                          th:action="@{/appointments/{id}/status(id=${appointment.id})}" method="post" class="inline">
+                        <input type="hidden" name="status" th:value="${s.name()}">
+                        <button type="submit" class="w-full text-left px-3 py-2 rounded-lg text-sm hover:bg-slate-50 transition-colors flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full"
+                                  th:classappend="${s.name() == 'CONFIRMED' ? 'bg-emerald-500' : (s.name() == 'PENDING' ? 'bg-amber-500' : (s.name() == 'CANCELLED' ? 'bg-red-500' : (s.name() == 'DONE' ? 'bg-slate-400' : 'bg-purple-500')))}"></span>
+                            <span th:text="${s.label}">Status</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+</body>
+</html>

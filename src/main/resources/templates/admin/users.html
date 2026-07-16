@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}" lang="fr">
+<head><title>Équipe</title></head>
+<body>
+<section layout:fragment="content">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-800">Gestion de l'équipe</h1>
+            <p class="text-sm text-slate-500" th:text="${#lists.size(users)} + ' membre(s)'">0</p>
+        </div>
+        <button onclick="document.getElementById('addUserModal').classList.remove('hidden')"
+                class="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-brand-600 to-brand-700 text-white font-semibold rounded-xl hover:from-brand-700 hover:to-brand-800 transition-all shadow-lg shadow-brand-500/25 text-sm">
+            <i data-lucide="user-plus" class="w-4 h-4"></i> Nouvel employé
+        </button>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-xl border border-slate-200/60 shadow-sm p-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center">
+                    <i data-lucide="users" class="w-5 h-5 text-slate-600"></i>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-slate-800" th:text="${countAll}">0</p>
+                    <p class="text-xs text-slate-500">Total</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl border border-slate-200/60 shadow-sm p-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
+                    <i data-lucide="camera" class="w-5 h-5 text-blue-600"></i>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-slate-800" th:text="${countPhotographers}">0</p>
+                    <p class="text-xs text-slate-500">Photographes</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl border border-slate-200/60 shadow-sm p-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center">
+                    <i data-lucide="hand-helping" class="w-5 h-5 text-amber-600"></i>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-slate-800" th:text="${countAssistants}">0</p>
+                    <p class="text-xs text-slate-500">Assistants</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl border border-slate-200/60 shadow-sm p-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-purple-50 rounded-lg flex items-center justify-center">
+                    <i data-lucide="shield" class="w-5 h-5 text-purple-600"></i>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-slate-800" th:text="${countAdmins}">0</p>
+                    <p class="text-xs text-slate-500">Admins</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="flex gap-2 mb-4">
+        <a href="/admin/users"
+           th:class="${filterRole == null} ? 'px-3 py-1.5 rounded-lg text-xs font-medium bg-brand-600 text-white' : 'px-3 py-1.5 rounded-lg text-xs font-medium bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'">
+            Tous
+        </a>
+        <a th:each="r : ${roles}" th:href="@{/admin/users(filterRole=${r.name()})}"
+           th:class="${filterRole != null && filterRole.name() == r.name()} ? 'px-3 py-1.5 rounded-lg text-xs font-medium bg-brand-600 text-white' : 'px-3 py-1.5 rounded-lg text-xs font-medium bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'"
+           th:text="${r.name()}">ROLE</a>
+    </div>
+
+    <!-- Users Grid -->
+    <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <a th:each="u : ${users}" th:href="@{/admin/users/{id}(id=${u.id})}"
+           class="bg-white rounded-2xl border border-slate-200/60 shadow-sm hover:shadow-md hover:border-brand-200 transition-all p-5 block group">
+            <div class="flex items-start gap-4">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
+                     th:classappend="${u.role.name() == 'ADMIN' ? 'bg-purple-100 text-purple-700' : (u.role.name() == 'PHOTOGRAPHER' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700')}"
+                     th:text="${u.initials}">AB</div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2">
+                        <p class="font-semibold text-slate-800 text-sm truncate group-hover:text-brand-700 transition-colors" th:text="${u.fullName}">Nom</p>
+                        <span th:unless="${u.active}" class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-red-50 text-red-600">Inactif</span>
+                    </div>
+                    <p class="text-xs text-slate-400 truncate" th:text="${u.email}">email</p>
+                    <div class="flex items-center gap-2 mt-2">
+                        <span class="px-2 py-0.5 rounded-md text-[10px] font-medium"
+                              th:classappend="${u.role.name() == 'ADMIN' ? 'bg-purple-50 text-purple-600' : (u.role.name() == 'PHOTOGRAPHER' ? 'bg-blue-50 text-blue-600' : 'bg-amber-50 text-amber-600')}"
+                              th:text="${u.role.name()}">ROLE</span>
+                        <span th:if="${u.phone != null and !#strings.isEmpty(u.phone)}" class="text-[10px] text-slate-400 flex items-center gap-1">
+                            <i data-lucide="phone" class="w-3 h-3"></i>
+                            <span th:text="${u.phone}">Tél</span>
+                        </span>
+                    </div>
+                    <!-- Specialties -->
+                    <div th:if="${u.specialties != null and !u.specialties.isEmpty()}" class="flex flex-wrap gap-1 mt-2">
+                        <span th:each="spec : ${u.specialties}"
+                              class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600"
+                              th:text="${spec.label}">Spec</span>
+                    </div>
+                </div>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300 group-hover:text-brand-500 transition-colors flex-shrink-0 mt-1"></i>
+            </div>
+        </a>
+    </div>
+
+    <div th:if="${#lists.isEmpty(users)}" class="text-center py-16 text-slate-400">
+        <i data-lucide="users" class="w-16 h-16 mx-auto mb-4 opacity-30"></i>
+        <p class="text-sm font-medium">Aucun employé trouvé</p>
+        <p class="text-xs mt-1">Créez votre premier employé pour commencer</p>
+    </div>
+
+    <!-- ═══ Add User Modal ═══ -->
+    <div id="addUserModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-5">
+                <h2 class="text-lg font-bold text-slate-800">Nouvel employé</h2>
+                <button onclick="document.getElementById('addUserModal').classList.add('hidden')"
+                        class="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <form action="/admin/users" method="post" class="space-y-4">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="col-span-2">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Nom complet *</label>
+                        <input type="text" name="fullName" required
+                               class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Email *</label>
+                        <input type="email" name="email" required
+                               class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Téléphone</label>
+                        <input type="tel" name="phone"
+                               class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Mot de passe *</label>
+                        <input type="password" name="password" required minlength="6"
+                               class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Rôle *</label>
+                        <select name="role" required
+                                class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm bg-white focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none">
+                            <option th:each="r : ${roles}" th:if="${r.name() != 'ADMIN'}" th:value="${r.name()}" th:text="${r.name()}">ROLE</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button type="submit"
+                        class="w-full py-2.5 bg-gradient-to-r from-brand-600 to-brand-700 text-white font-semibold rounded-xl hover:from-brand-700 hover:to-brand-800 transition-all shadow-lg shadow-brand-500/25 text-sm">
+                    Créer l'employé
+                </button>
+            </form>
+        </div>
+    </div>
+</section>
+</body>
+</html>

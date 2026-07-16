@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title layout:title-pattern="$CONTENT_TITLE — PHOTOAGENCE">PHOTOAGENCE</title>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: { extend: {
+                colors: {
+                    brand: { 50:'#f0f4ff',100:'#dbe4ff',200:'#bac8ff',300:'#91a7ff',400:'#748ffc',500:'#5c7cfa',600:'#4c6ef5',700:'#4263eb',800:'#3b5bdb',900:'#364fc7',950:'#1e2a5e' }
+                },
+                fontFamily: { sans: ['Poppins','system-ui','sans-serif'] }
+            }}
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@hotwired/turbo@8.0.12/dist/turbo.es2017-umd.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <style>
+        [x-cloak]{display:none!important}
+        ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-thumb{background:#c1c7d0;border-radius:3px}
+        .page-enter{animation:fadeIn .3s ease-out}
+        @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+        .nav-link{transition:all .2s ease}.nav-link:hover{background:rgba(255,255,255,.08);transform:translateX(4px)}
+        .nav-link.active{background:rgba(255,255,255,.12);border-left:3px solid #748ffc}
+        .turbo-progress-bar{height:3px;background:linear-gradient(90deg,#748ffc,#5c7cfa);position:fixed;top:0;z-index:9999}
+    </style>
+    <meta name="turbo-cache-control" content="no-preview">
+</head>
+<body class="bg-slate-50 font-sans antialiased min-h-screen text-slate-700"
+      x-data="{sidebarOpen:false,toastMsg:'',toastType:'success',showToast:false}"
+      @show-toast.window="toastMsg=$event.detail.msg;toastType=$event.detail.type;showToast=true;setTimeout(()=>showToast=false,$event.detail.type==='error'?5000:4000)">
+<div class="flex min-h-screen">
+    <!-- Overlay mobile -->
+    <div x-show="sidebarOpen" x-cloak @click="sidebarOpen=false"
+         class="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden"
+         x-transition:enter="transition-opacity duration-300" x-transition:enter-start="opacity-0"
+         x-transition:leave="transition-opacity duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"></div>
+
+    <!-- SIDEBAR -->
+    <aside :class="sidebarOpen?'translate-x-0':'-translate-x-full'"
+           class="fixed inset-y-0 left-0 z-50 w-64 bg-gradient-to-b from-brand-950 to-slate-900 text-white transform transition-transform duration-300 md:translate-x-0 md:static md:z-auto flex flex-col">
+        <div class="flex items-center gap-3 px-5 py-5 border-b border-white/10">
+            <div class="w-10 h-10 bg-gradient-to-br from-brand-400 to-brand-600 rounded-xl flex items-center justify-center shadow-lg">
+                <i data-lucide="camera" class="w-5 h-5 text-white"></i>
+            </div>
+            <div><h1 class="text-lg font-bold tracking-tight">PHOTOAGENCE</h1><p class="text-[10px] text-brand-300 uppercase tracking-widest">Studio Manager</p></div>
+            <button @click="sidebarOpen=false" class="ml-auto md:hidden text-white/60 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+            <p class="px-3 text-[10px] font-semibold text-brand-300 uppercase tracking-wider mb-2">Principal</p>
+            <a href="/dashboard" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/80 hover:text-white"><i data-lucide="layout-dashboard" class="w-[18px] h-[18px]"></i><span>Tableau de bord</span></a>
+            <a href="/clients" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/80 hover:text-white"><i data-lucide="users" class="w-[18px] h-[18px]"></i><span>Clients</span></a>
+            <a href="/appointments" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/80 hover:text-white"><i data-lucide="calendar" class="w-[18px] h-[18px]"></i><span>Rendez-vous</span></a>
+            <a href="/workspace" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/80 hover:text-white"><i data-lucide="kanban" class="w-[18px] h-[18px]"></i><span>Workspace</span></a>
+            <p class="px-3 pt-4 text-[10px] font-semibold text-brand-300 uppercase tracking-wider mb-2" sec:authorize="hasAnyRole('ADMIN','ASSISTANT')">Finance</p>
+            <a href="/billing/invoices" sec:authorize="hasAnyRole('ADMIN','ASSISTANT')" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/80 hover:text-white"><i data-lucide="receipt" class="w-[18px] h-[18px]"></i><span>Facturation</span></a>
+            <a href="/billing/quotes" sec:authorize="hasAnyRole('ADMIN','ASSISTANT')" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/80 hover:text-white"><i data-lucide="file-text" class="w-[18px] h-[18px]"></i><span>Devis</span></a>
+            <a href="/accounting" sec:authorize="hasRole('ADMIN')" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/80 hover:text-white"><i data-lucide="bar-chart-3" class="w-[18px] h-[18px]"></i><span>Comptabilité</span></a>
+            <p class="px-3 pt-4 text-[10px] font-semibold text-brand-300 uppercase tracking-wider mb-2" sec:authorize="hasRole('ADMIN')">Administration</p>
+            <a href="/admin/users" sec:authorize="hasRole('ADMIN')" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/80 hover:text-white"><i data-lucide="users" class="w-[18px] h-[18px]"></i><span>Équipe</span></a>
+            <a href="/admin/alerts" sec:authorize="hasRole('ADMIN')" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/80 hover:text-white"><i data-lucide="bell" class="w-[18px] h-[18px]"></i><span>Alertes</span></a>
+            <a href="/admin/catalog" sec:authorize="hasRole('ADMIN')" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/80 hover:text-white"><i data-lucide="package" class="w-[18px] h-[18px]"></i><span>Prestations</span></a>
+        </nav>
+        <div class="px-4 py-3 border-t border-white/10" sec:authorize="isAuthenticated()">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-full bg-brand-600 flex items-center justify-center text-sm font-semibold"><i data-lucide="user" class="w-4 h-4"></i></div>
+                <div class="flex-1 min-w-0"><p class="text-sm font-medium truncate" th:text="${currentUser?.fullName ?: 'Utilisateur'}">User</p><p class="text-xs text-brand-300 truncate" th:text="${currentUser?.role?.name() ?: ''}">ROLE</p></div>
+                <form th:action="@{/logout}" method="post" class="inline">
+                    <button type="submit" class="text-white/40 hover:text-red-400 transition-colors" title="Déconnexion"><i data-lucide="log-out" class="w-4 h-4"></i></button>
+                </form>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN -->
+    <div class="flex-1 flex flex-col min-h-screen">
+        <header class="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-slate-200/60 px-4 md:px-6 py-3">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <button @click="sidebarOpen=true" class="md:hidden p-2 -ml-2 text-slate-500 hover:text-slate-700 rounded-lg hover:bg-slate-100"><i data-lucide="menu" class="w-5 h-5"></i></button>
+                    <h2 class="text-lg font-semibold text-slate-800" th:text="${pageTitle ?: 'PHOTOAGENCE'}">Page</h2>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button class="relative p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"><i data-lucide="bell" class="w-5 h-5"></i><span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span></button>
+                    <button class="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"><i data-lucide="search" class="w-5 h-5"></i></button>
+                </div>
+            </div>
+        </header>
+        <main class="flex-1 p-4 md:p-6 pb-24 md:pb-6 page-enter">
+            <section layout:fragment="content"></section>
+        </main>
+    </div>
+</div>
+
+<!-- BOTTOM NAV (Mobile) -->
+<nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 md:hidden z-30">
+    <div class="flex justify-around items-center py-2">
+        <a href="/dashboard" class="flex flex-col items-center gap-0.5 px-3 py-1 text-slate-400 hover:text-brand-600"><i data-lucide="layout-dashboard" class="w-5 h-5"></i><span class="text-[10px] font-medium">Accueil</span></a>
+        <a href="/clients" class="flex flex-col items-center gap-0.5 px-3 py-1 text-slate-400 hover:text-brand-600"><i data-lucide="users" class="w-5 h-5"></i><span class="text-[10px] font-medium">Clients</span></a>
+        <a href="/appointments" class="flex flex-col items-center gap-0.5 px-3 py-1 text-slate-400 hover:text-brand-600"><i data-lucide="calendar" class="w-5 h-5"></i><span class="text-[10px] font-medium">Agenda</span></a>
+        <a href="/workspace" class="flex flex-col items-center gap-0.5 px-3 py-1 text-slate-400 hover:text-brand-600"><i data-lucide="kanban" class="w-5 h-5"></i><span class="text-[10px] font-medium">Dossiers</span></a>
+        <a href="/billing/invoices" sec:authorize="hasAnyRole('ADMIN','ASSISTANT')" class="flex flex-col items-center gap-0.5 px-3 py-1 text-slate-400 hover:text-brand-600"><i data-lucide="receipt" class="w-5 h-5"></i><span class="text-[10px] font-medium">Factures</span></a>
+    </div>
+</nav>
+
+<!-- TOAST -->
+<div x-show="showToast" x-cloak x-transition class="fixed bottom-20 md:bottom-6 right-4 md:right-6 z-50">
+    <div class="flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg border"
+         :class="toastType==='success'?'bg-emerald-50 border-emerald-200 text-emerald-800':toastType==='error'?'bg-red-50 border-red-200 text-red-800':'bg-blue-50 border-blue-200 text-blue-800'">
+        <span class="text-sm font-medium" x-text="toastMsg"></span>
+        <button @click="showToast=false" class="ml-2 opacity-50 hover:opacity-100"><i data-lucide="x" class="w-4 h-4"></i></button>
+    </div>
+</div>
+<div th:if="${successMessage}" th:data-msg="${successMessage}" x-init="toastMsg=$el.dataset.msg;toastType='success';showToast=true;setTimeout(()=>showToast=false,4000)"></div>
+<div th:if="${errorMessage}" th:data-msg="${errorMessage}" x-init="toastMsg=$el.dataset.msg;toastType='error';showToast=true;setTimeout(()=>showToast=false,5000)"></div>
+
+<script>
+    function initIcons(){lucide.createIcons()}
+    function highlightActiveNav(){
+        var path=window.location.pathname;
+        document.querySelectorAll('.nav-link').forEach(function(link){
+            link.classList.remove('active');
+            var href=link.getAttribute('href');
+            if(href && (path===href || (href!=='/' && path.startsWith(href)))){
+                link.classList.add('active');
+            }
+        });
+    }
+    document.addEventListener('DOMContentLoaded',function(){initIcons();highlightActiveNav()});
+    document.addEventListener('turbo:load',function(){initIcons();highlightActiveNav()});
+    document.addEventListener('turbo:render',initIcons);
+</script>
+<script layout:fragment="scripts"></script>
+</body>
+</html>

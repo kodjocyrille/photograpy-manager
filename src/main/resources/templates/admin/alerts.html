@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}" lang="fr">
+<head><title>Configuration Alertes</title></head>
+<body>
+<section layout:fragment="content">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <h1 class="text-2xl font-bold text-slate-800">Configuration des alertes</h1>
+        <a href="/admin/alerts/history" class="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-700 font-medium rounded-xl hover:bg-slate-50 text-sm">
+            <i data-lucide="history" class="w-4 h-4"></i> Historique emails
+        </a>
+    </div>
+
+    <!-- KPI -->
+    <div class="grid sm:grid-cols-2 gap-4 mb-6">
+        <div class="bg-white rounded-xl border border-slate-200/60 shadow-sm p-5 flex items-center gap-4">
+            <div class="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center">
+                <i data-lucide="mail-check" class="w-5 h-5 text-emerald-600"></i>
+            </div>
+            <div>
+                <p class="text-sm text-slate-500">Emails envoyés</p>
+                <p class="text-xl font-bold text-emerald-600" th:text="${totalSent}">0</p>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl border border-slate-200/60 shadow-sm p-5 flex items-center gap-4">
+            <div class="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center">
+                <i data-lucide="mail-x" class="w-5 h-5 text-red-600"></i>
+            </div>
+            <div>
+                <p class="text-sm text-slate-500">Échecs</p>
+                <p class="text-xl font-bold text-red-600" th:text="${totalFailed}">0</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Test Email -->
+    <div class="bg-white rounded-xl border border-slate-200/60 shadow-sm p-5 mb-6">
+        <h3 class="font-semibold text-slate-800 mb-3 flex items-center gap-2">
+            <i data-lucide="send" class="w-4 h-4 text-brand-500"></i> Envoyer un email de test
+        </h3>
+        <form th:action="@{/admin/alerts/test}" method="post" class="flex gap-3">
+            <input type="email" name="testEmail" required placeholder="email@exemple.com"
+                   class="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none">
+            <button type="submit" class="px-6 py-2.5 bg-gradient-to-r from-brand-600 to-brand-700 text-white font-semibold rounded-xl hover:from-brand-700 hover:to-brand-800 text-sm whitespace-nowrap">
+                Envoyer test
+            </button>
+        </form>
+    </div>
+
+    <!-- Alertes Client -->
+    <div class="bg-white rounded-xl border border-slate-200/60 shadow-sm overflow-hidden mb-6">
+        <div class="px-5 py-4 border-b border-slate-200 bg-slate-50">
+            <h3 class="font-semibold text-slate-800 flex items-center gap-2">
+                <i data-lucide="user" class="w-4 h-4 text-brand-500"></i> Alertes Client
+            </h3>
+        </div>
+        <table class="w-full text-sm">
+            <thead class="border-b border-slate-100">
+                <tr>
+                    <th class="text-left px-5 py-3 font-semibold text-slate-600">Type</th>
+                    <th class="text-left px-5 py-3 font-semibold text-slate-600 hidden md:table-cell">Description</th>
+                    <th class="text-center px-5 py-3 font-semibold text-slate-600">Statut</th>
+                    <th class="text-right px-5 py-3 font-semibold text-slate-600">Action</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+                <th:block th:each="c : ${configs}" th:if="${c.alertType.client}">
+                    <tr class="hover:bg-slate-50/50">
+                        <td class="px-5 py-3 font-medium text-slate-800" th:text="${c.alertType.label}">Type</td>
+                        <td class="px-5 py-3 text-slate-500 text-xs hidden md:table-cell" th:text="${c.alertType.description}">Desc</td>
+                        <td class="px-5 py-3 text-center">
+                            <span th:if="${c.enabled}" class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700">Actif</span>
+                            <span th:unless="${c.enabled}" class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 text-slate-400">Inactif</span>
+                        </td>
+                        <td class="px-5 py-3 text-right">
+                            <form th:action="@{/admin/alerts/{id}/toggle(id=${c.id})}" method="post" class="inline">
+                                <button type="submit" class="px-3 py-1.5 text-xs rounded-lg border transition-colors"
+                                        th:classappend="${c.enabled} ? 'text-red-600 border-red-200 hover:bg-red-50' : 'text-emerald-600 border-emerald-200 hover:bg-emerald-50'"
+                                        th:text="${c.enabled ? 'Désactiver' : 'Activer'}">Toggle</button>
+                            </form>
+                        </td>
+                    </tr>
+                </th:block>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Alertes Internes -->
+    <div class="bg-white rounded-xl border border-slate-200/60 shadow-sm overflow-hidden">
+        <div class="px-5 py-4 border-b border-slate-200 bg-slate-50">
+            <h3 class="font-semibold text-slate-800 flex items-center gap-2">
+                <i data-lucide="shield" class="w-4 h-4 text-amber-500"></i> Alertes Internes (Équipe)
+            </h3>
+        </div>
+        <table class="w-full text-sm">
+            <thead class="border-b border-slate-100">
+                <tr>
+                    <th class="text-left px-5 py-3 font-semibold text-slate-600">Type</th>
+                    <th class="text-left px-5 py-3 font-semibold text-slate-600 hidden md:table-cell">Description</th>
+                    <th class="text-center px-5 py-3 font-semibold text-slate-600">Statut</th>
+                    <th class="text-right px-5 py-3 font-semibold text-slate-600">Action</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+                <th:block th:each="c : ${configs}" th:if="${c.alertType.internal}">
+                    <tr class="hover:bg-slate-50/50">
+                        <td class="px-5 py-3 font-medium text-slate-800" th:text="${c.alertType.label}">Type</td>
+                        <td class="px-5 py-3 text-slate-500 text-xs hidden md:table-cell" th:text="${c.alertType.description}">Desc</td>
+                        <td class="px-5 py-3 text-center">
+                            <span th:if="${c.enabled}" class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700">Actif</span>
+                            <span th:unless="${c.enabled}" class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 text-slate-400">Inactif</span>
+                        </td>
+                        <td class="px-5 py-3 text-right">
+                            <form th:action="@{/admin/alerts/{id}/toggle(id=${c.id})}" method="post" class="inline">
+                                <button type="submit" class="px-3 py-1.5 text-xs rounded-lg border transition-colors"
+                                        th:classappend="${c.enabled} ? 'text-red-600 border-red-200 hover:bg-red-50' : 'text-emerald-600 border-emerald-200 hover:bg-emerald-50'"
+                                        th:text="${c.enabled ? 'Désactiver' : 'Activer'}">Toggle</button>
+                            </form>
+                        </td>
+                    </tr>
+                </th:block>
+            </tbody>
+        </table>
+    </div>
+</section>
+</body>
+</html>

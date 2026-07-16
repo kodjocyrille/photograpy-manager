@@ -1,0 +1,409 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title th:text="${documentTitle}">FACTURE</title>
+    <style type="text/css">
+        @page {
+            size: A4;
+            margin: 30px 40px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: Helvetica, Arial, sans-serif;
+            font-size: 11px;
+            color: #1e293b;
+            line-height: 1.5;
+        }
+
+        /* Header */
+        .header {
+            background-color: #1e2a5e;
+            color: white;
+            padding: 25px 30px;
+            margin: -30px -40px 30px -40px;
+        }
+        .header-inner {
+            width: 100%;
+        }
+        .company-name {
+            font-size: 22px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            margin-bottom: 3px;
+        }
+        .company-sub {
+            font-size: 9px;
+            color: #bac8ff;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+        .doc-title {
+            font-size: 28px;
+            font-weight: bold;
+            text-align: right;
+            letter-spacing: 1px;
+        }
+        .doc-number {
+            font-size: 12px;
+            text-align: right;
+            color: #bac8ff;
+            margin-top: 2px;
+        }
+
+        /* Info section */
+        .info-section {
+            margin-bottom: 25px;
+        }
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .info-table td {
+            vertical-align: top;
+            padding: 0;
+        }
+        .info-box {
+            padding: 15px 18px;
+            border-radius: 8px;
+        }
+        .info-box-left {
+            background-color: #f1f5f9;
+        }
+        .info-box-right {
+            background-color: #eff6ff;
+            border: 1px solid #dbeafe;
+        }
+        .info-label {
+            font-size: 8px;
+            font-weight: bold;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 8px;
+        }
+        .info-name {
+            font-size: 14px;
+            font-weight: bold;
+            color: #1e293b;
+            margin-bottom: 3px;
+        }
+        .info-detail {
+            font-size: 10px;
+            color: #64748b;
+            margin-bottom: 2px;
+        }
+
+        /* Dates bar */
+        .dates-bar {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 12px 18px;
+            margin-bottom: 25px;
+        }
+        .dates-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .dates-table td {
+            padding: 0;
+        }
+        .date-label {
+            font-size: 8px;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .date-value {
+            font-size: 11px;
+            font-weight: bold;
+            color: #334155;
+        }
+
+        /* Lines table */
+        .lines-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        .lines-table thead th {
+            background-color: #1e2a5e;
+            color: white;
+            padding: 10px 12px;
+            font-size: 9px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-align: left;
+        }
+        .lines-table thead th:first-child {
+            border-radius: 6px 0 0 0;
+        }
+        .lines-table thead th:last-child {
+            border-radius: 0 6px 0 0;
+            text-align: right;
+        }
+        .lines-table tbody td {
+            padding: 12px;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 11px;
+        }
+        .lines-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+
+        /* Totals */
+        .totals-wrapper {
+            margin-bottom: 25px;
+        }
+        .totals-table {
+            width: 250px;
+            border-collapse: collapse;
+            margin-left: auto;
+        }
+        .totals-table td {
+            padding: 6px 12px;
+            font-size: 11px;
+        }
+        .total-label {
+            color: #64748b;
+            text-align: left;
+        }
+        .total-value {
+            text-align: right;
+            font-weight: bold;
+        }
+        .total-row-main {
+            background-color: #1e2a5e;
+            color: white;
+            border-radius: 6px;
+        }
+        .total-row-main td {
+            padding: 10px 12px;
+            font-size: 13px;
+            font-weight: bold;
+        }
+        .total-paid {
+            color: #16a34a;
+        }
+        .total-remaining {
+            color: #dc2626;
+        }
+
+        /* Payments */
+        .payments-section {
+            margin-bottom: 25px;
+        }
+        .section-title {
+            font-size: 12px;
+            font-weight: bold;
+            color: #1e293b;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        .payment-row {
+            padding: 8px 12px;
+            background-color: #f0fdf4;
+            border-radius: 6px;
+            margin-bottom: 4px;
+        }
+        .payment-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .payment-table td {
+            padding: 3px 0;
+            font-size: 10px;
+        }
+
+        /* Status badge */
+        .badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 9px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .badge-paid { background-color: #dcfce7; color: #166534; }
+        .badge-partial { background-color: #fef3c7; color: #92400e; }
+        .badge-unpaid { background-color: #fee2e2; color: #991b1b; }
+        .badge-sent { background-color: #dbeafe; color: #1e40af; }
+
+        /* Footer */
+        .footer {
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 1px solid #e2e8f0;
+            text-align: center;
+            font-size: 9px;
+            color: #94a3b8;
+        }
+        .footer-brand {
+            font-weight: bold;
+            color: #4c6ef5;
+            font-size: 10px;
+        }
+
+        /* Receipt watermark */
+        .receipt-badge {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .receipt-stamp {
+            display: inline-block;
+            border: 3px solid #16a34a;
+            color: #16a34a;
+            padding: 6px 24px;
+            font-size: 14px;
+            font-weight: bold;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            border-radius: 8px;
+            transform: rotate(-3deg);
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <table class="header-inner">
+            <tr>
+                <td style="width:60%;">
+                    <div class="company-name">PHOTOAGENCE</div>
+                    <div class="company-sub">Studio Manager</div>
+                </td>
+                <td style="width:40%;">
+                    <div class="doc-title" th:text="${documentTitle}">FACTURE</div>
+                    <div class="doc-number" th:text="${invoice.invoiceNumber}">FAC-2026-0001</div>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Receipt stamp -->
+    <div th:if="${isReceipt}" class="receipt-badge">
+        <span class="receipt-stamp">&#x2713; PAYÉ</span>
+    </div>
+
+    <!-- Client + Company info -->
+    <div class="info-section">
+        <table class="info-table">
+            <tr>
+                <td style="width:48%; padding-right:10px;">
+                    <div class="info-box info-box-left">
+                        <div class="info-label">De</div>
+                        <div class="info-name">PHOTOAGENCE</div>
+                        <div class="info-detail">Studio de photographie professionnel</div>
+                        <div class="info-detail">contact@photoagence.com</div>
+                    </div>
+                </td>
+                <td style="width:4%;"></td>
+                <td style="width:48%;">
+                    <div class="info-box info-box-right">
+                        <div class="info-label">Facturer à</div>
+                        <div class="info-name" th:text="${invoice.client.fullName}">Client Nom</div>
+                        <div class="info-detail" th:text="'Tél: ' + ${invoice.client.phone}">Tél</div>
+                        <div class="info-detail" th:text="${invoice.client.email}">Email</div>
+                        <div th:if="${invoice.client.address != null}" class="info-detail" th:text="${invoice.client.address}">Adresse</div>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Dates -->
+    <div class="dates-bar">
+        <table class="dates-table">
+            <tr>
+                <td style="width:33%;">
+                    <div class="date-label">Date d'émission</div>
+                    <div class="date-value" th:text="${#temporals.format(invoice.createdAt, 'dd/MM/yyyy')}">01/01/2026</div>
+                </td>
+                <td style="width:33%;">
+                    <div class="date-label">Date d'échéance</div>
+                    <div class="date-value" th:text="${invoice.dueDate != null ? #temporals.format(invoice.dueDate, 'dd/MM/yyyy') : '-'}">31/01/2026</div>
+                </td>
+                <td style="width:34%; text-align:right;">
+                    <div class="date-label">Statut</div>
+                    <span class="badge"
+                          th:classappend="${invoice.status.name() == 'PAID' ? 'badge-paid' : (invoice.status.name() == 'PARTIALLY_PAID' ? 'badge-partial' : (invoice.status.name() == 'OVERDUE' ? 'badge-unpaid' : 'badge-sent'))}"
+                          th:text="${invoice.status.label}">Statut</span>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Lines -->
+    <table class="lines-table">
+        <thead>
+            <tr>
+                <th style="width:50%;">Description</th>
+                <th class="text-center" style="width:15%;">Quantité</th>
+                <th class="text-right" style="width:17%;">Prix unitaire</th>
+                <th class="text-right" style="width:18%;">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="line : ${invoice.lines}">
+                <td th:text="${line.description}">Prestation</td>
+                <td class="text-center" th:text="${line.quantity}">1</td>
+                <td class="text-right" th:text="${#numbers.formatDecimal(line.unitPrice, 0, 'COMMA', 0, 'POINT')} + ' FCFA'">0 FCFA</td>
+                <td class="text-right" style="font-weight:bold;" th:text="${#numbers.formatDecimal(line.lineTotal, 0, 'COMMA', 0, 'POINT')} + ' FCFA'">0 FCFA</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- Totals -->
+    <div class="totals-wrapper">
+        <table class="totals-table">
+            <tr>
+                <td class="total-label">Sous-total</td>
+                <td class="total-value" th:text="${#numbers.formatDecimal(invoice.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' FCFA'">0 FCFA</td>
+            </tr>
+            <tr th:if="${invoice.amountPaid.compareTo(T(java.math.BigDecimal).ZERO) > 0}">
+                <td class="total-label">Payé</td>
+                <td class="total-value total-paid" th:text="'-' + ${#numbers.formatDecimal(invoice.amountPaid, 0, 'COMMA', 0, 'POINT')} + ' FCFA'">0 FCFA</td>
+            </tr>
+            <tr th:if="${invoice.remainingAmount.compareTo(T(java.math.BigDecimal).ZERO) > 0}">
+                <td class="total-label">Reste dû</td>
+                <td class="total-value total-remaining" th:text="${#numbers.formatDecimal(invoice.remainingAmount, 0, 'COMMA', 0, 'POINT')} + ' FCFA'">0 FCFA</td>
+            </tr>
+            <tr class="total-row-main">
+                <td>TOTAL</td>
+                <td class="text-right" th:text="${#numbers.formatDecimal(invoice.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' FCFA'">0 FCFA</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Payments history (for receipts) -->
+    <div th:if="${isReceipt and !#lists.isEmpty(invoice.payments)}" class="payments-section">
+        <div class="section-title">Historique des paiements</div>
+        <div th:each="p : ${invoice.payments}" class="payment-row">
+            <table class="payment-table">
+                <tr>
+                    <td style="width:40%;">
+                        <strong th:text="${p.method.label}">Mode</strong>
+                    </td>
+                    <td style="width:30%;" th:text="${#temporals.format(p.paymentDate, 'dd/MM/yyyy')}">Date</td>
+                    <td style="width:30%; text-align:right; font-weight:bold; color:#16a34a;"
+                        th:text="'+' + ${#numbers.formatDecimal(p.amount, 0, 'COMMA', 0, 'POINT')} + ' FCFA'">+0 FCFA</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <div class="footer-brand">PHOTOAGENCE — Studio Manager</div>
+        <div style="margin-top:4px;">Document généré le <span th:text="${generatedDate}">01/01/2026</span></div>
+        <div style="margin-top:2px;">Merci pour votre confiance !</div>
+    </div>
+</body>
+</html>
